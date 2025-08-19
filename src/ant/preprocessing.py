@@ -1,0 +1,121 @@
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 2) 전처리: 후보 추출(LLM 토큰 절약 + 품질 보강)
+# - OCR 전체 텍스트를 그대로 넘기면 토큰 낭비 + 혼선 발생 가능
+# - 규칙 기반으로 날짜/금액/거래처 "후보"를 줄여서 LLM에 전달
+# - LLM은 이 후보 중심으로 단일 값을 결정 → 품질↑/비용↓(1차 전처리)
+from src.ant.constants import KOREAN_CO_PREFIXES
+from typing import List
+import re
+
+def _is_amount_token(s: str) -> bool:
+    """
+    문자열이 '금액/숫자'처럼 보이는지 간단히 판단.
+    허용 예: 26,700 / 24,272 / 2,428 / -13,500 / 1234 / 1234.56
+    - 천단위 콤마(,) 허용
+    - 음수 기호(-) 허용
+    - 소수점(.) 허용
+    """
+    return bool(
+        re.fullmatch(
+            r"-?\d{1,3}(,\d{3})+(?:\.\d+)?|-?\d+(?:\.\d+)?",
+            s,
+        )
+    )
+
+
+def _normalize_amount(s: str) -> str:
+    """
+    금액 문자열의 표면 정규화:
+    - 쉼표(,) 제거
+    - 앞뒤 공백 제거
+    원문 표시가 필요한 경우가 아니면 내부 처리에는 보통 쉼표를 제거해 numeric 캐스팅을 쉽게 함.
+    """
+    return s.replace(",", "").strip()
+
+
+def _find_company_like(lines: List[str]) -> List[str]:
+    """
+    거래처(회사명) 후보 추출:
+    - 라인에 한국 법인형태 접두(주식회사, (주), ㈜, 유한회사, …)가 들어가면 후보로 수집
+    - 도메인 특화 키워드(예: 오늘의집) 같은 브랜드명도 추가로 수집(예시)
+    - 순서 보존 + 중복 제거(dict.fromkeys 트릭)
+    """
+    cands: List[str] = []
+
+    # 1) 접두 패턴이 포함된 라인 수집
+    for ln in lines:
+        t = ln.strip()
+        if any(p in t for p in KOREAN_CO_PREFIXES):
+            cands.append(t)
+
+    # 2) 프로젝트/도메인 특화 키워드 수집(필요시 확장 가능)
+    for ln in lines:
+        if "오늘의집" in ln and ln not in cands:
+            cands.append(ln)
+
+    # 3) 중복 제거(순서 유지): dict.fromkeys를 리스트로 다시 감싸기
+    return list(dict.fromkeys(cands))
+
+
+def _find_amount_candidates(doc: "OCRDocument") -> List[str]:
+    """
+    금액 후보 추출:
+    - structured numbers(엔진이 뽑아준 숫자들) 중 금액 패턴과 매칭되는 것 수집
+    - text_boxes의 원시 텍스트에서도 공백 제거 후 금액 패턴 매칭
+    - 최종적으로 중복 제거(순서 보존)
+    """
+    cands: List[str] = []
+
+    # 1) 구조화 숫자 사전에서 후보 추출
+    for n in doc.numbers:
+        if _is_amount_token(n):
+            cands.append(n)
+
+    # 2) 텍스트 박스에서 직접 금액 모양 탐색(예: 표 셀 값)
+    for tb in doc.text_boxes:
+        # 공백이 섞인 "2, 428" 같은 경우를 위해 공백 제거 후 판별
+        t = tb.text.replace(" ", "")
+        if _is_amount_token(t):
+            cands.append(t)
+
+    # 3) 중복 제거 + 순서 보존
+    return list(dict.fromkeys(cands))
+
+
+def _find_date_candidates(doc: "OCRDocument") -> List[str]:
+    """
+    날짜 후보 추출:
+    - OCR structured dates(엔진이 이미 날짜로 분류한 값)를 우선 채용
+    - 그 외 raw_text_lines 전체를 정규식으로 스캔해서 YYYY-MM-DD/YY.MM.DD/무구분 등 다양한 표기를 포착
+    - 포착되면 일관된 'YYYY-MM-DD' 형태로 정규화해서 추가
+    - 최종적으로 중복 제거(순서 보존)
+
+    정규식 설명:
+    - (20\\d{2}) 또는 (19\\d{2}) → 1900~2099년
+    - [-/.]? → 구분자(없어도 되고 -, /, . 허용)
+    - (0[1-9]|1[0-2]) → 월
+    - (0[1-9]|[12]\\d|3[01]) → 일
+    - \b 경계로 숫자 덩어리의 경계를 잡아 '오탑' 매칭을 줄임
+    """
+    # 다양한 년도 케이스(1900~2099)
+    patterns = [
+        r"\b(20\d{2})[-/.]?(0[1-9]|1[0-2])[-/.]?(0[1-9]|[12]\d|3[01])\b",
+        r"\b(19\d{2})[-/.]?(0[1-9]|1[0-2])[-/.]?(0[1-9]|[12]\d|3[01])\b",
+    ]
+
+    seen = set()                 # 중복 체크용
+    out: List[str] = list(doc.dates)  # 엔진이 뽑은 날짜 후보를 먼저 담아 둠
+
+    # 라인 단위로 샅샅이 스캔
+    for ln in doc.raw_text_lines:
+        for pat in patterns:
+            for m in re.finditer(pat, ln):
+                y, mm, dd = m.group(1), m.group(2), m.group(3)
+                norm = f"{y}-{mm}-{dd}"  # 일관된 포맷으로 정규화
+                if norm not in seen:
+                    out.append(norm)
+                    seen.add(norm)
+
+    # 단순히 중복만 제거(등장 횟수/위치 기반 가중치는 여기선 생략)
+    return list(dict.fromkeys(out))
