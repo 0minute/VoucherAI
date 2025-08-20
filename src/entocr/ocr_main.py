@@ -123,7 +123,7 @@ def ocr_image_and_save_json_by_extension(image_path: str) -> str:
                 
                 # JSON 파일로 저장
                 import json
-                json_result = json.dumps(combined_result, ensure_ascii=False, indent=2)
+                json_result = json.dumps(combined_result, ensure_ascii=False)
                 
                 output_file = Path(output_path)
                 output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -153,8 +153,8 @@ if __name__ == "__main__":
     
     # 테스트 케이스들
     test_cases = [
-        ("input/TI-1.png", "output/TI-1_main.json"),  # PNG 파일
-        ("input/TI-2.pdf", "output/TI-2_main.json"),  # PDF 파일
+        # ("input/TI-1.png", "output/TI-1_main.json"),  # PNG 파일
+        ("input/한의원.pdf", "output/한의원.json"),  # PDF 파일
     ]
     
     logger.info("=== Entocr Main Processing Test ===")
@@ -166,7 +166,7 @@ if __name__ == "__main__":
             
         try:
             logger.info(f"Test {i}: Processing {input_file} -> {output_file}")
-            result, _ = ocr_image_and_save_json_by_extension(input_file, output_file)
+            result, _ = ocr_image_and_save_json_by_extension(input_file)
             logger.info(f"Test {i}: ✅ Success! Output saved to {output_file}")
             
         except Exception as e:

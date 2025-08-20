@@ -1,18 +1,25 @@
 from src.ant.llm_main import extract_invoice_fields
 from src.entocr.ocr_main import ocr_image_and_save_json_by_extension
+from src.ant.llm_main import extract_with_locations
 from src.entjournal.journal_main import get_json_wt_one_value_from_extract_invoice_fields, create_dataframe_from_json, save_dataframe_to_excel, save_dataframe_to_csv, save_dataframe_to_json
 import zipfile
 import os
 import tempfile
 import json
+from src.utils.constants import EXTRACTED_JSON_DIR
 # 추가해야할것
 # 유형에 따른 계정과목 자동 매핑 추가(추후 추천 ui도 구상 > 시연시에 뭐가 더 있어보일지?)
 # 아티스트 분할 관련 고민하기(자동분할) > 1. 매니저별 담당자 정해진 경우/방문일정과 연동<현실적/샵 주소 정보와 연동<과거 히스토리 기반 추천
 def run(input_data: str):
-    json_path, result = ocr_image_and_save_json_by_extension(input_data)
-    print(result)
-    result = extract_invoice_fields(json_path)
-    print(result)
+    # json_path, result = ocr_image_and_save_json_by_extension(input_data)
+    # print(result)
+    # result = json.loads(result)
+    json_path = os.path.join(EXTRACTED_JSON_DIR, "TI-1.json")
+    with open(json_path, "r", encoding="utf-8") as f:
+        result = json.load(f)
+    data, overlay_path, thumbnail_path = extract_with_locations(result)
+    print(data)
+    return data
 
 
 def run_with_zip(zipfile_path: str):
@@ -33,13 +40,13 @@ def save_excel(journal_data_list_wt_one_value: list):
 
     
 if __name__ == "__main__":
-    # import json
-    # result = run("input/TI-2.pdf")
-    # with open("output/TI-2.json", "w", encoding="utf-8") as f:
-    #     json.dump(result, f, ensure_ascii=False)
+    import json
+    result = run("input/TI-1.png")
+    with open("output/TI-1.json", "w", encoding="utf-8") as f:
+        json.dump(result, f, ensure_ascii=False)
 
-    journal_data_list_wt_one_value = run_with_zip("input/input.zip")
-    save_excel(journal_data_list_wt_one_value)
+    # journal_data_list_wt_one_value = run_with_zip("input/input.zip")
+    # save_excel(journal_data_list_wt_one_value)
 
 
 

@@ -44,7 +44,7 @@ class OCRDocument:
         - 숫자/좌표는 캐스팅 시 예외 방지를 위해 기본값과 형 변환 적용
         """
         tboxes: List[OCRTextBox] = []
-
+        # 여기서  에러남
         # 1) 텍스트 박스들 파싱: ocr_json["text_boxes"]는 보통 리스트 형태
         for tb in ocr_json.get("text_boxes", []):
             # 원 데이터에서 값 꺼내기(없으면 기본값)

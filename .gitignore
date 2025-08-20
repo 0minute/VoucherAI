@@ -179,3 +179,11 @@ Thumbs.db
 # Temporary files
 temp/
 tmp/
+
+# Streamlit temporary files
+.st_tmp/
+
+
+data/
+data/*
+data/extracted_json/

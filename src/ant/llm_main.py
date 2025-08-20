@@ -9,22 +9,24 @@
 from __future__ import annotations
 import json
 import re
-from typing import Any, Dict, List
-from src.ant.utils import _image_path_to_data_url
+import os
+from typing import Any, Dict, List, Tuple
+from src.ant.utils import _image_path_to_data_url, _as_list_of_obj, _normalize_token_ko, _normalize_bizno
 from src.ant.ocr_document import OCRDocument
+from src.ant.visualization import build_selections_for_viz, draw_overlays, export_thumbnails
 # ──────────────────────────────────────────────────────────────────────────────
 # 0) 외부 제공 함수: load_llm_model
 #    (질문에 주신 함수를 같은 모듈/패키지 내에서 import 해 쓰면 됩니다)
 from src.ant.load_llm import load_llm_model  # <- 당신 환경에 맞게 경로 조정
 # ──────────────────────────────────────────────────────────────────────────────
 # 2) 전처리 함수
-from src.ant.preprocessing import _find_date_candidates, _find_amount_candidates, _find_company_like
+from src.ant.preprocessing import _find_date_candidates, _find_amount_candidates, _find_company_like, _find_bizno_candidates, _find_ceo_candidates, _find_address_candidates, build_candidates, add_account_name
 # ──────────────────────────────────────────────────────────────────────────────
 # 3) LLM 컨텍스트 구성
-from src.ant.constants import SYSTEM_PROMPT, USER_HARD_PROMPT, CATEGORY, ACCOUNT_MAP, REQUIRED_FIELDS, RESULT_FIELDS
+from src.ant.constants import SYSTEM_PROMPT, USER_HARD_PROMPT, CATEGORY, ACCOUNT_MAP, ACCOUNT_CODE_MAP, REQUIRED_FIELDS, RESULT_FIELDS
 
 from src.ant.categorize import _normalize_token_ko
-from src.utils.constants import LLM_MODEL_NAME
+from src.utils.constants import LLM_MODEL_NAME, OVERLAY_DIR, THUMBNAIL_DIR, EXTRACTED_JSON_DIR
 
 def build_llm_messages(doc: OCRDocument) -> List[Dict[str, object]]:
     """
@@ -37,33 +39,42 @@ def build_llm_messages(doc: OCRDocument) -> List[Dict[str, object]]:
     date_cands = _find_date_candidates(doc)
     amt_cands  = _find_amount_candidates(doc)
     co_cands   = _find_company_like(doc.raw_text_lines)
+    bizno_cands = _find_bizno_candidates(doc.raw_text_lines)
+    ceo_cands   = _find_ceo_candidates(doc.raw_text_lines)
+    addr_cands  = _find_address_candidates(doc.raw_text_lines)
 
-    # 2) 표/금액 구조를 드러내는 힌트 라인(텍스트 컨텍스트 최소화 버전)
+    # 표/금액 구조 힌트 라인
     key_lines = []
     for ln in doc.raw_text_lines:
         if any(k in ln for k in ["공급가액", "세액", "합계", "품목", "공 급 받 는 자", "공급자"]):
             key_lines.append(ln.strip())
     for ln in doc.raw_text_lines:
-        if any(k in ln for k in ["주식회사", "(주)", "㈜"]):
+        if any(k in ln for k in ["주식회사", "(주)", "㈜", "오늘의집"]):
             key_lines.append(ln.strip())
 
-    # 3) LLM 컨텍스트: CATEGORY '목록'만 제공 (키워드/후보 제공 안 함)
+    # 후보 레지스트리(ID+좌표)
+    candidates = build_candidates(doc, max_items=200)
+
     context_obj = {
         "이미지": doc.source_image,
         "후보": {
             "날짜": date_cands[:5],
             "금액": amt_cands[:8],
             "거래처": co_cands[:6],
+            "사업자등록번호": bizno_cands,
+            "대표자": ceo_cands,
+            "주소": addr_cands,
         },
-        "CATEGORY": list(dict.fromkeys(CATEGORY)),  # 허용 가능한 최종 선택지
+        "CATEGORY": list(dict.fromkeys(CATEGORY)),  # 카테고리는 '목록'만 제공
         "힌트라인": key_lines[:16],
+        "candidates": candidates,                   # ← 핵심: ID + bbox 제공
         "참고": (
             "세금계산서의 합계 = 공급가액 + 세액. 거래처는 보통 상대방 회사명 한 개. "
             "유형은 반드시 CATEGORY 목록 중 단 하나를 선택."
         ),
     }
 
-    # 4) 이미지(Data URL) 포함 멀티모달 메시지 구성
+    # 멀티모달 메시지 만들기
     user_content = [
         {"type": "text", "text": json.dumps(context_obj, ensure_ascii=False)},
     ]
@@ -129,115 +140,156 @@ def call_llm_and_parse(
 
 
 def _validate_and_coerce(data: Dict[str, Any]) -> None:
-    # 0) 필수 키 존재 검사 (유형 포함)
-    for key in REQUIRED_FIELDS:
-        if key not in data:
-            raise ValueError(f"LLM 결과에 '{key}' 키가 없습니다.")
+    # 필수키
+    required = ["날짜", "거래처", "금액", "유형", "사업자등록번호", "대표자", "주소"]
+    for k in required:
+        if k not in data:
+            raise ValueError(f"LLM 결과에 '{k}' 키가 없습니다.")
 
-    # 1) 값들을 리스트로 강제
-    for k in REQUIRED_FIELDS:
-        v = data[k]
-        if isinstance(v, (str, int, float)):
-            data[k] = [v]
-        elif not isinstance(v, list):
-            data[k] = [str(v)]
+    # 리스트 강제 (value/source_id 구조)
+    for k in ["날짜", "거래처", "금액", "사업자등록번호", "대표자", "주소"]:
+        data[k] = _as_list_of_obj(data[k])
 
-    # 2) 날짜 정규화
-    norm_dates = []
-    for d in data["날짜"]:
-        ds = str(d).strip()
-        m = re.search(r"(19|20)\d{2}[-/.]?(0[1-9]|1[0-2])[-/.]?(0[1-9]|[12]\d|3[01])", ds)
-        if m:
-            norm_dates.append(f"{m.group(1)}-{m.group(2)}-{m.group(3)}")
-        else:
-            norm_dates.append(ds)
-    data["날짜"] = list(dict.fromkeys(norm_dates))
-
-    # 3) 금액 정규화
-    norm_amts = []
-    for a in data["금액"]:
-        s = str(a).replace(",", "").strip()
-        if re.fullmatch(r"-?\d+(\.\d+)?", s):
-            norm_amts.append(s)
-        else:
-            m = re.search(r"-?\d{1,3}(?:,\d{3})+|\d+(\.\d+)?", str(a))
-            if m:
-                norm_amts.append(m.group(0).replace(",", ""))
-    if norm_amts:
-        data["금액"] = list(dict.fromkeys(norm_amts))
-
-    # 4) 거래처 정리
-    data["거래처"] = [str(x).strip() for x in data["거래처"] if str(x).strip()]
-
-    # 5) 유형 검증: 반드시 CATEGORY 중 하나만 남김
+    # 유형은 목록 중 1개만
+    v = data["유형"]
+    if isinstance(v, list):
+        pass
+    else:
+        data["유형"] = [v]
     allowed = list(dict.fromkeys(CATEGORY))
     allowed_norm = { _normalize_token_ko(c): c for c in allowed }
 
-    coerced: List[str] = []
+    coerced_cat: List[str] = []
     for u in data["유형"]:
         u_str = str(u).strip()
         if u_str in allowed:
-            coerced.append(u_str)
-            continue
-        # 부분/정규화 일치로 보정 시도 (너무 공격적이면 제거 가능)
+            coerced_cat.append(u_str); break
         u_norm = _normalize_token_ko(u_str)
         if u_norm in allowed_norm:
-            coerced.append(allowed_norm[u_norm])
+            coerced_cat.append(allowed_norm[u_norm]); break
+        matches = [c for n,c in allowed_norm.items() if (n in u_norm) or (u_norm in n)]
+        if matches:
+            coerced_cat.append(matches[0]); break
+    data["유형"] = coerced_cat[:1]
+
+    # 날짜 정규화
+    for item in data["날짜"]:
+        ds = str(item["value"]).strip()
+        m = re.search(r"(19|20)\d{2}[-/.]?(0[1-9]|1[0-2])[-/.]?(0[1-9]|[12]\d|3[01])", ds)
+        if m:
+            item["value"] = f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
+
+    # 금액 정규화
+    for item in data["금액"]:
+        s = str(item["value"]).replace(",", "").strip()
+        if re.fullmatch(r"-?\d+(\.\d+)?", s):
+            item["value"] = s
         else:
-            # 부분 포함(양방향) 매칭
-            matches = [c for n,c in allowed_norm.items()
-                       if (n in u_norm) or (u_norm in n)]
-            if matches:
-                coerced.append(matches[0])
+            m = re.search(r"-?\d{1,3}(?:,\d{3})+|\d+(\.\d+)?", str(item["value"]))
+            if m:
+                item["value"] = m.group(0).replace(",", "")
 
-    # 하나도 매칭 안 되면 빈 리스트(상위 로직에서 처리). 하나 이상이면 1개만 유지.
-    data["유형"] = coerced[:1]
+    # 사업자등록번호 정규화
+    for item in data["사업자등록번호"]:
+        item["value"] = _normalize_bizno(item["value"])
+        # 하이픈 3-2-5 형태면 OK. 아니면 그대로(후속 처리에 맡김)
 
-    # 기타 로직에 따른 필드 추가
-    data["계정과목"] = ACCOUNT_MAP[data["유형"][0]]
+    # 거래처/대표자/주소 공백 정리
+    for k in ["거래처", "대표자", "주소"]:
+        for item in data[k]:
+            item["value"] = str(item["value"]).strip()
+
+    # 중복 제거(필드별 value 기준)
+    def _dedup(items: List[Dict[str, Any]]):
+        seen = set(); out=[]
+        for it in items:
+            key = (it["value"], it.get("source_id"))
+            if key in seen: continue
+            seen.add(key); out.append(it)
+        return out
+
+    for k in ["날짜","거래처","금액","사업자등록번호","대표자","주소"]:
+        data[k] = _dedup(data[k])
 
 # ──────────────────────────────────────────────────────────────────────────────
 # 5) 파이프라인 진입점
-def extract_invoice_fields(
-    ocr_json: Dict[str, Any],
-    model_name: str = LLM_MODEL_NAME,  # 기본 LLM 모델명
-) -> Dict[str, Any]:
-    """
-    OCR JSON(dict)을 입력받아
-    날짜·거래처·금액만 추출한 딕셔너리로 반환.
+# def extract_invoice_fields(ocr_json: Dict[str, Any], model_name: str = "gpt4o_latest") -> Dict[str, Any]:
+#     """
+#     하위호환: 기존 스키마 유지(필드별 값 리스트만 반환).
+#     (value/source_id 구조는 내부적으로 보정 후 value만 남김)
+#     """
+#     doc = OCRDocument.from_raw(ocr_json)
+#     messages = build_llm_messages(doc)
+#     raw = call_llm_and_parse(model_name, messages)
+#     _validate_and_coerce(raw)  # value/source_id 구조로 정리됨
 
-    동작 순서:
-    1) OCR JSON → OCRDocument 객체로 변환
-    2) 후보/힌트 기반 LLM 메시지 생성
-    3) LLM 호출 + 결과 파싱·검증
-    4) 지정된 3개 키만 남기고 반환
+#     # value만 추려서 하위호환 출력
+#     def _vals(items: List[Dict[str, Any]]):
+#         return [it["value"] for it in items]
+
+#     out = {
+#         "날짜": _vals(raw["날짜"]),
+#         "거래처": _vals(raw["거래처"]),
+#         "금액": _vals(raw["금액"]),
+#         "유형": raw["유형"],  # ["카테고리"]
+#         "사업자등록번호": _vals(raw["사업자등록번호"]),
+#         "대표자": _vals(raw["대표자"]),
+#         "주소": _vals(raw["주소"]),
+#     }
+#     return out
+
+def extract_with_locations(ocr_json, model_name: str = "gpt4o_latest") -> Tuple[Dict[str, Any], List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """
+    확장 버전:
+    - 반환 1: 구조화 결과(data)  → 각 필드가 [{"value","source_id"}] 구조
+    - 반환 2: candidates         → [{"id","text","bbox","tag"}] 전체 후보 레지스트리
+    - 반환 3: selections         → 시각화용 [{"field","value","source_id","bbox"}]
     """
     if isinstance(ocr_json, str):
-        with open(ocr_json, "r", encoding="utf-8") as f:
-            ocr_json = json.load(f)
+        ocr_json = json.loads(ocr_json)
+    elif isinstance(ocr_json, dict):
+        pass
     else:
-        ocr_json = ocr_json
-    # 1) OCRDocument 생성
-    doc = OCRDocument.from_raw(ocr_json)
+        raise ValueError("ocr_json must be a string or a dictionary")
 
-    # 2) LLM에 줄 메시지 구성
+    doc = OCRDocument.from_raw(ocr_json)
     messages = build_llm_messages(doc)
 
-    # 3) LLM 호출 및 파싱
-    result = call_llm_and_parse(model_name, messages)
+    # context_obj 안에 들어간 candidates를 다시 꺼내 쓸 수 없으므로
+    # 동일 로직으로 한 번 더 생성(혹은 build_llm_messages가 반환하도록 바꿔도 됨)
+    candidates = build_candidates(doc, max_items=200)
 
-    # 4) 최종 보호막: 지정된 3개 키만 남기고 반환
-    # 추가 후보: 증빙유형, 공급가액*부가세*합계금액분리/ 과세유형, 거래처 정보 강화(사업자등록번호, 대표자, 주소), 전표유형, 추천계정과목, 결제수단
-    # 필드별 추출 근거 남길 수 있으면 좋음
-    # 계정과목은 우선 추천계정 수준으로(1대 1 맵핑 > 추후 맥락 기준 정확도 향상 가능)
-    whitelisted = {k: result.get(k, []) for k in RESULT_FIELDS}
-    return whitelisted
-# ──────────────────────────────────────────────────────────────────────────────
-# 6) 사용 예시 (첨부하신 파일 경로 기준)
+    data = call_llm_and_parse(model_name, messages)
+    _validate_and_coerce(data)
+    add_account_name(data)
+    selections = build_selections_for_viz(data, candidates)
+
+
+    return data, candidates, selections
+
+def extract_with_locations_and_save(ocr_json: Dict[str, Any], model_name: str = "gpt4o_latest") -> Tuple[Dict[str, Any], List[Dict[str, Any]], List[Dict[str, Any]]]:
+    data, candidates, selections = extract_with_locations(ocr_json, model_name)
+    img_path = ocr_json.get("source_image")  # 원본 이미지 경로가 OCR JSON에 있어야 함
+    if img_path and os.path.exists(img_path):
+        filename = os.path.basename(img_path)
+        filename_without_extension = os.path.splitext(filename)[0]
+        overlay_path = os.path.join(OVERLAY_DIR, f"{filename_without_extension}_overlay.png")
+        thumbnail_path = os.path.join(THUMBNAIL_DIR, f"{filename_without_extension}_thumbnails")
+        draw_overlays(img_path, selections, overlay_path)
+        export_thumbnails(img_path, selections, thumbnail_path, margin=0.06)
+    else:
+        print("원본 이미지 경로가 없습니다.")
+    return data, overlay_path, thumbnail_path
+# ============================================================
+# 7) 사용 예시
+
+# ============================================================
 if __name__ == "__main__":
-    with open("input/TI-1_extracted.json", "r", encoding="utf-8") as f:
+    # 1) 추출 + 위치정보
+    with open(os.path.join(EXTRACTED_JSON_DIR, "TI-1.json"), "r", encoding="utf-8") as f:
         ocr = json.load(f)
 
-    out = extract_invoice_fields(ocr, model_name="gpt4o_latest")
-    # 요구사항상, 여기서도 JSON만 출력하고 싶은 경우:
-    print(json.dumps(out, ensure_ascii=False))
+    data, overlay_path, thumbnail_path = extract_with_locations_and_save(ocr, model_name="gpt4o_latest")
+
+    # 4) 하위호환 결과만 필요하면:
+    # print(json.dumps(extract_invoice_fields(ocr), ensure_ascii=False, indent=2))

@@ -4,8 +4,10 @@
 # - OCR 전체 텍스트를 그대로 넘기면 토큰 낭비 + 혼선 발생 가능
 # - 규칙 기반으로 날짜/금액/거래처 "후보"를 줄여서 LLM에 전달
 # - LLM은 이 후보 중심으로 단일 값을 결정 → 품질↑/비용↓(1차 전처리)
-from src.ant.constants import KOREAN_CO_PREFIXES
-from typing import List
+from src.ant.constants import KOREAN_CO_PREFIXES, ACCOUNT_MAP, ACCOUNT_CODE_MAP
+from typing import List, Dict, Any, Optional
+from src.ant.ocr_document import OCRDocument
+from src.ant.utils import _normalize_bbox
 import re
 
 def _is_amount_token(s: str) -> bool:
@@ -119,3 +121,120 @@ def _find_date_candidates(doc: "OCRDocument") -> List[str]:
 
     # 단순히 중복만 제거(등장 횟수/위치 기반 가중치는 여기선 생략)
     return list(dict.fromkeys(out))
+
+
+# 신규 필드 간단 후보
+def _find_bizno_candidates(lines: List[str]) -> List[str]:
+    out = []
+    for ln in lines:
+        for m in _BIZNO_PAT.finditer(ln):
+            out.append(f"{m.group(1)}-{m.group(2)}-{m.group(3)}")
+    return list(dict.fromkeys(out))[:4]
+
+def _find_ceo_candidates(lines: List[str]) -> List[str]:
+    out = []
+    name_like = re.compile(r"[가-힣A-Za-z]{2,10}")
+    for ln in lines:
+        if any(k in ln for k in ["대표자", "성명"]):
+            cleaned = re.sub(r"[\[\]()<>{}]", " ", ln)
+            out.extend([m.group(0) for m in name_like.finditer(cleaned)])
+    return list(dict.fromkeys(out))[:6]
+
+def _find_address_candidates(lines: List[str]) -> List[str]:
+    out = []
+    for ln in lines:
+        if "주소" in ln:
+            s = ln.strip()
+            part = re.split(r"주소[:\s]*", s, maxsplit=1)
+            cand = part[1].strip() if len(part) > 1 and part[1].strip() else s
+            out.append(cand)
+    return list(dict.fromkeys(out))[:4]
+
+# ============================================================
+# 1) 후보 레지스트리: ID + 텍스트 + 상대좌표 + 태그
+#    (LLM은 이 레지스트리의 id만 선택 → 좌표를 안정적으로 추적)
+# ============================================================
+
+# 간단 패턴들
+_BIZNO_PAT = re.compile(r"\b(\d{3})[-–](\d{2})[-–](\d{5})\b")
+
+def _tag_for_text(tb_text: str) -> Optional[str]:
+    """
+    텍스트 내용을 바탕으로 대략적인 태그를 부여(가벼운 휴리스틱).
+    - amount/date/company/keyword/bizno/name/address/other
+    - 필요 시 확장 가능. (여기서는 간결 버전)
+    """
+    t = tb_text.strip()
+    t_no_space = t.replace(" ", "")
+
+    # 키워드
+    if any(k in t for k in ["공급가액", "세액", "합계", "품목", "공 급 받 는 자", "공급자", "비고"]):
+        return "keyword"
+
+    # 회사명(단순)
+    if any(k in t for k in ["주식회사", "(주)", "㈜"]):
+        return "company"
+
+    # 주소/대표자(키워드 기반)
+    if "주소" in t:
+        return "address"
+    if any(k in t for k in ["대표자", "성명"]):
+        return "name"
+
+    # 사업자등록번호
+    if _BIZNO_PAT.search(t):
+        return "bizno"
+
+    # 날짜(널리 허용)
+    if re.search(r"\b(19|20)\d{2}[-/.]?(0[1-9]|1[0-2])[-/.]?(0[1-9]|[12]\d|3[01])\b", t):
+        return "date"
+
+    # 금액
+    if _is_amount_token(t_no_space):
+        return "amount"
+
+    # 기타는 None 처리(필요시 'other'로도 표기 가능)
+    return None
+
+def build_candidates(doc: OCRDocument, max_items: int = 200) -> List[Dict[str, Any]]:
+    """
+    텍스트 박스들에서 '태그가 있는 것'만 골라 후보 레지스트리 생성.
+    - 각 항목: {id, text, bbox(0~1), tag}
+    - 페이지 개념이 없으면 p0 고정. (PDF 다페이지면 page 번호 붙이도록 확장)
+    """
+    # 문서 크기 추정
+    W = max((tb.bbox[2] for tb in doc.text_boxes), default=1)
+    H = max((tb.bbox[3] for tb in doc.text_boxes), default=1)
+
+    candidates: List[Dict[str, Any]] = []
+    idx = 0
+    for tb in doc.text_boxes:
+        tag = _tag_for_text(tb.text)
+        if not tag:
+            continue
+        cid = f"p0_{idx:05d}"
+        candidates.append({
+            "id": cid,
+            "text": tb.text.strip(),
+            "bbox": _normalize_bbox(tb.bbox, W, H),
+            "tag": tag,
+        })
+        idx += 1
+        if len(candidates) >= max_items:
+            break
+    return candidates
+
+
+def add_account_name(data: Dict[str, Any]):
+    category_name = data["유형"]
+    if isinstance(category_name, list):
+        category_name = category_name[0] if len(category_name) > 0 else None
+    if category_name in ACCOUNT_MAP:
+        data["계정과목"] = ACCOUNT_MAP[category_name]
+    else:
+        raise ValueError(f"ACCOUNT_MAP에 {category_name} 키가 없습니다.")
+    
+    if data["계정과목"] in ACCOUNT_CODE_MAP:
+        data["계정코드"] = ACCOUNT_CODE_MAP[data["계정과목"]]
+    else:
+        raise ValueError(f"ACCOUNT_CODE_MAP에 {data['계정과목']} 키가 없습니다.")
