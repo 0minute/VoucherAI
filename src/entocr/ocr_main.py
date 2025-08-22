@@ -31,7 +31,7 @@ def ocr_image_and_save_json_by_extension(image_path: str) -> str:
     파일 확장자에 따라 변환 후 OCR을 수행합니다.
     
     Args:
-        image_path (str): 입력 파일 경로
+        image_path (str): 입력 파일 경로. png/jpg/jpeg/pdf 파일 지원(pdf는 현재 오류 발생중)
         output_path (str): 출력 JSON 파일 경로
         
     Returns:

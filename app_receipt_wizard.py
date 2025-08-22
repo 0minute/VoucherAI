@@ -29,11 +29,14 @@ from src.ant.llm_main import (
 # OCR: 이미 구현됨
 # from your_ocr_module import ocr_image_and_save_json_by_extension
 from src.entocr.ocr_main import ocr_image_and_save_json_by_extension
+from src.entjournal.journal_main import make_journal_entry, get_json_wt_one_value_from_extract_invoice_fields, drop_source_id_from_json, make_journal_entry_to_record_list
 # (선택) 카테고리/분개 매핑에 활용
 try:
     from src.ant.constants import CATEGORY
 except Exception:
     CATEGORY = []
+
+from loguru import logger
 
 # ========================= 기본 설정 =========================
 st.set_page_config(page_title="AutoVoucher AI", page_icon="🧾", layout="wide")
@@ -228,6 +231,8 @@ def _process_queue():
         export_thumbnails(img_path, selections, thumbs_dir, margin=0.06)
 
         # 결과 저장
+        # logger.info(f"[{os.path.basename(img_path)}] 처리 완료")
+        # logger.info(f"data: {data}")
         ss["results"][img_path] = {
             "data": data,
             "candidates": candidates,
@@ -457,79 +462,100 @@ ACCOUNT_MAP = {
     "리스/렌탈": ("임차료", "미지급금"),
 }
 
-def _build_journal_preview(df_review: pd.DataFrame, vat_rate: float = 0.1) -> pd.DataFrame:
+def _build_journal_preview(df: pd.DataFrame, vat_rate: float = 0.1) -> pd.DataFrame:
     """
     Review 표 → 분개 미리보기 구성 (간단 버전)
     - 차변: 카테고리별 비용
     - 대변: 미지급금 (또는 카드/현금 등으로 확장 가능)
     - VAT 별도 라인 미생성(간단화). 필요 시 공급가/세액 분리 로직 추가.
     """
-    rows = []
-    for _, r in df_review.iterrows():
-        amount = _to_number(r["amount"]) or 0.0
-        category = str(r.get("category") or "").split(",")[0].strip() or "기본"
-        debit_acc, credit_acc = ACCOUNT_MAP.get(category, ACCOUNT_MAP["기본"])
-        rows.append({
-            "date": r["date"],
-            "account": debit_acc,
-            "debit": amount,
-            "credit": 0.0,
-            "description": f"{r['vendor']} {category}",
-            "vendor": r["vendor"],
-            "doc_no": r["biz_no"],
-            "cost_center": "",
-            "project": "",
-            "file_id": r["file_id"],
-        })
-        rows.append({
-            "date": r["date"],
-            "account": credit_acc,
-            "debit": 0.0,
-            "credit": amount,
-            "description": f"{r['vendor']} {category}",
-            "vendor": r["vendor"],
-            "doc_no": r["biz_no"],
-            "cost_center": "",
-            "project": "",
-            "file_id": r["file_id"],
-        })
-    return pd.DataFrame(rows)
+    # rows = []
+    # for _, r in df.iterrows():
+    #     amount = _to_number(r["amount"]) or 0.0
+    #     category = str(r.get("category") or "").split(",")[0].strip() or "기본"
+    #     debit_acc, credit_acc = ACCOUNT_MAP.get(category, ACCOUNT_MAP["기본"])
+    #     rows.append({
+    #         "date": r["date"],
+    #         "account": debit_acc,
+    #         "debit": amount,
+    #         "credit": 0.0,
+    #         "description": f"{r['vendor']} {category}",
+    #         "vendor": r["vendor"],
+    #         "doc_no": r["biz_no"],
+    #         "cost_center": "",
+    #         "project": "",
+    #         "file_id": r["file_id"],
+    #     })
+    #     rows.append({
+    #         "date": r["date"],
+    #         "account": credit_acc,
+    #         "debit": 0.0,
+    #         "credit": amount,
+    #         "description": f"{r['vendor']} {category}",
+    #         "vendor": r["vendor"],
+    #         "doc_no": r["biz_no"],
+    #         "cost_center": "",
+    #         "project": "",
+    #         "file_id": r["file_id"],
+    #     })
+    return df
 
 def tab_journal_entry():
     left, right = st.columns([1,2], gap="large")
 
     with left:
-        st.subheader("매핑 프로필")
-        # st.session_state["mapping_profile"] = st.selectbox("Profile", ["Default"], index=0)
-        # st.session_state["vat_rate"] = st.number_input("VAT (%)", value=int(st.session_state["vat_rate"]*100), min_value=0, max_value=20, step=1) / 100.0
+        # st.subheader("매핑 프로필")
+        # # st.session_state["mapping_profile"] = st.selectbox("Profile", ["Default"], index=0)
+        # # st.session_state["vat_rate"] = st.number_input("VAT (%)", value=int(st.session_state["vat_rate"]*100), min_value=0, max_value=20, step=1) / 100.0
 
-        st.markdown("**규칙 요약 (예시)**")
-        st.write(pd.DataFrame([
-            {"조건":"category=판매대행수수료","차변":"수수료비용","대변":"미지급금"},
-            {"조건":"category=운송비","차변":"운반비","대변":"미지급금"},
-            {"조건":"default","차변":"비용(기타)","대변":"미지급금"},
-        ]))
+        # st.markdown("**규칙 요약 (예시)**")
+        # st.write(pd.DataFrame([
+        #     {"조건":"category=판매대행수수료","차변":"수수료비용","대변":"미지급금"},
+        #     {"조건":"category=운송비","차변":"운반비","대변":"미지급금"},
+        #     {"조건":"default","차변":"비용(기타)","대변":"미지급금"},
+        # ]))
 
-    with right:
+    # with right:
         st.subheader("4) Journal Entry 미리보기")
         df_review = st.session_state.get("review_df_cache")
         if df_review is None or df_review.empty:
             st.info("Review 탭에서 표가 생성되면 여기서 미리보기를 볼 수 있습니다.")
             return
 
-        je = _build_journal_preview(df_review, st.session_state["vat_rate"])
-        # 차대변 합계 검증
-        total_debit = float(je["debit"].sum())
-        total_credit = float(je["credit"].sum())
-        ok = abs(total_debit - total_credit) < 1e-6
+        # J/E 생성
+        rows_ls = []
+        for p, res in st.session_state["results"].items():
+            # 각 영수증 데이터
+            d = res["data"]
+
+            # value 리스트 전처리
+            logger.info(f"d: {d}")
+            d = get_json_wt_one_value_from_extract_invoice_fields(d)
+            logger.info(f"d2: {d}")
+            # source_id 제거
+            if isinstance(d, dict):
+                d = [d]
+            d = drop_source_id_from_json(d)
+            journal_entries = make_journal_entry(d)
+            rows_l = make_journal_entry_to_record_list(journal_entries, p)
+            rows_ls.extend(rows_l)
+            
+        # logger.info(f"rows: {rows}")
+        df = pd.DataFrame(rows_ls)
+
+        je = _build_journal_preview(df, st.session_state["vat_rate"])
+        # # 차대변 합계 검증
+        # total_debit = float(je["차변"].sum())
+        # total_credit = float(je["대변"].sum())
+        # ok = abs(total_debit - total_credit) < 1e-6
 
         st.dataframe(je, use_container_width=True, hide_index=True)
-        st.metric("차변 합계", f"{total_debit:,.0f}")
-        st.metric("대변 합계", f"{total_credit:,.0f}")
-        if not ok:
-            st.error("차대변 합계가 0이 아닙니다. 매핑 규칙/금액을 확인하세요.")
-        else:
-            st.success("차대변 합계 일치")
+        # st.metric("차변 합계", f"{total_debit:,.0f}")
+        # st.metric("대변 합계", f"{total_credit:,.0f}")
+        # if not ok:
+        #     st.error("차대변 합계가 0이 아닙니다. 매핑 규칙/금액을 확인하세요.")
+        # else:
+        #     st.success("차대변 합계 일치")
 
         st.session_state["je_rows_cache"] = je
 

@@ -1,13 +1,22 @@
 import pandas as pd
 import io, os
 from openpyxl.utils import get_column_letter
-
+from src.entjournal.constants import AP_ACCOUNT_NAME, AP_ACCOUNT_CODE, COMPANY_NAME, PROJECT_NAME_GROUP, ACCOUNT_NAME_TO_SPLIT, GROUP_MEMBERS
+import datetime
+from decimal import Decimal, ROUND_HALF_UP
+import json
+from src.entjournal.constants import COLUMN_RULES_PATH
+from loguru import logger
 
 def get_json_wt_one_value_from_extract_invoice_fields(extract_invoice_fields_results):
     """
+    [Note] 현재는 LLM이 한개의 결과를 반환하지만, 추후 후보를 반환한 후 사용자가 선택하는 기능으로의 확장을 고려하여 VALUE를 리스트 형태로 반환하고 있습니다.
+    현재는 추천 기능이 없으므로, 해당 함수를 활용하여 후처리를 수행한 후 다음 단계로 넘어가도록 합니다.
+
     extract_invoice_fields의 결과 딕셔너리를 테이블(한개의 value를 가진 딕셔너리)로 변환합니다.
     #todo value가 리스트인 경우 사용자가 선택할 수 있도록 함
     #현재방식: 첫번째 값을 사용
+    
     
     input : {key: [value1, value2, ...], key2: [value1, value2, ...], ...}
     output : {key: value, key2: value, ...}
@@ -54,7 +63,7 @@ def get_json_wt_one_value_from_extract_invoice_fields(extract_invoice_fields_res
                     selected = value
 
             result_d[key] = selected
-            result_l.append(result_d)
+        result_l.append(result_d)
     if len(result_l) == 1:
         return result_l[0]
     else:
@@ -124,3 +133,246 @@ def get_result_jsons(session_state_results:dict):
         result_json["파일명"] = os.path.basename(os.path.basename(image_path))
         result_jsons.append(result_json)
     return result_jsons
+
+def load_column_rules() -> dict:
+    if os.path.exists(COLUMN_RULES_PATH):
+        with open(COLUMN_RULES_PATH, "r", encoding="utf-8") as f:
+            column_rules = json.load(f)
+    else:
+        column_rules = {}
+    return column_rules
+
+def map_artist_name_with_column_rules_to_json(json_data: list) -> list:
+    # 리스트의 각 요소는 각 영수증에서 추출된 데이터임.
+    column_rules = load_column_rules()
+    if not column_rules:
+        return json_data
+    for voucher_data in json_data:
+        voucher_data["프로젝트명"] = None
+        # 영수증에서 추출된 각 정보(컬럼)별로 검사함.
+        for voucher_header, voucher_value in voucher_data.items():
+            column_rule = column_rules.get(voucher_header)
+            if column_rule:
+                artist_name = column_rule.get(voucher_value)
+                # 컬럼 규칙에 해당되는 아티스트 명 존재 > 아티스트 명 변경
+                voucher_data["프로젝트명"] = artist_name
+                logger.info(f"규칙에 따른 아티스트명 맵핑 완료: {voucher_header}_{voucher_value} -> {artist_name}")
+                # 규칙 발견시 해당 영수증에 대한 검사는 종료함
+                break
+        
+    return json_data
+
+def make_journal_entry(json_data: list, erp: str = 'dz') -> dict:
+    """
+    분개를 생성합니다.
+    데이터는 모두 비용이므로, 상대계정은 동일한 금액의 미지급금입니다.
+    특정 비용은 그룹 구성원별로 분할될 수 있는 것을 고려하여 코드를 구성해야 합니다.
+    결과는 dict로 반환(해당 함수는 연산만 수행)
+
+    input: list of dict
+    [{
+        "날짜": "2025-01-01",
+        "거래처": "거래처명",
+        "사업자등록번호": "1234567890",
+        "대표자": "대표자명",
+        "주소": "주소",
+        "금액": 1000000,
+        "계정과목": "지급수수료",
+        "계정코드": "1111111111",
+        "유형": "판매대행수수료"
+    },...]
+
+    output: list of dict
+    1단계 깊이 리스트의 내용: 각 거래 건별로 별도의 딕셔너리를 구성합니다.
+    2단계 깊이 딕셔너리의 내용: debit, credit을 key로 구성합니다. value는 리스트입니다.
+    3단계 깊이 리스트의 내용: debit 리스트의 내용은 각 레코드입니다. 분할될 경우 2개+의 레코드가 포함됩니다. credit 리스트의 내용은 미지급금 레코드입니다.
+
+    분개 컬럼 구성: SAP/더존 별로 달라집니다. 공통된 부분을 처리한 후, ERP에 따라 분기를 나눕니다.
+
+    params
+    erp: str 
+        SAP: erp = 'sap'
+        DZ: erp = 'dz'        
+    """
+
+    # 추출 데이터 별로 순환
+    # 컬럼 규칙 적용
+    json_data = map_artist_name_with_column_rules_to_json(json_data)
+    # Dummy
+    # ------------------------------------------------------------
+    biz_reg_no_to_Vender_Code = {"11111":"삼일회계법인"}
+    artist_code = "001"
+    manager_name = "바비"
+    confirmer_name = "Confirm"
+    # ------------------------------------------------------------
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    journal_entries = {}
+    record_id = 1
+    for journal_no, voucher_data in enumerate(json_data):
+        #대변 생성
+        journal_entry = {}
+        credit_row = []
+        artist_name = voucher_data["프로젝트명"]
+        credit_row.append({
+            #전표 헤더
+            "회사코드": "001",
+            "회사명": COMPANY_NAME,
+            "회계일자": voucher_data["날짜"], # 날짜 yyyy-mm-dd 후처리 필요
+            "묶음번호": journal_no+1,
+            "전표차수": 1,
+            "전표유형": "일반",
+            "작성부서": "회계팀",
+            "작성자" : "VOUCHERAI",
+            "상태" : "승인",
+            "통화" : "KRW",
+            "증빙유형" : voucher_data["증빙유형"],
+            "생성일시" : now,
+            "수정일시" : now,
+            "승인일시" : now,
+            "생성자" : "VOUCHERAI",
+            "수정자" : "VOUCHERAI",
+            "승인자" : confirmer_name,
+
+            #전표 라인
+            "차변/대변구분": "대변",
+            "계정과목": AP_ACCOUNT_NAME,
+            "계정코드": AP_ACCOUNT_CODE,
+            "금액" : int(voucher_data["금액"]),
+            "거래처코드" : voucher_data["거래처코드"],
+            "거래처명": voucher_data["거래처"],
+            "사업자등록번호": voucher_data["사업자등록번호"], # 거래처코드와 매핑 확장 
+            "적요": make_text_for_journal(voucher_data["증빙유형"], voucher_data["날짜"], artist_name, voucher_data["거래처"], voucher_data["유형"]),
+            "차변": 0,
+            "대변": int(voucher_data["금액"]),
+            "프로젝트코드" : artist_code,
+            "프로젝트명" : artist_name,
+            "사용부서명" : manager_name,
+            "지출유형" : voucher_data["유형"]
+        })
+        # 차변 생성
+        debit_rows = []
+        serial_no = 2
+        if voucher_data["계정과목"] in ACCOUNT_NAME_TO_SPLIT and artist_name in PROJECT_NAME_GROUP:
+            members = GROUP_MEMBERS[artist_name]
+            # 잔차보정 로직 필요
+            amount_per_member = _round_krw(Decimal(voucher_data["금액"]) / len(members))
+            for member in members:
+                debit_rows.append({
+                    #전표 헤더
+                    "회사코드": "001",
+                    "회사명": COMPANY_NAME,
+                    "회계일자": voucher_data["날짜"],
+                    "묶음번호": journal_no+1,
+                    "전표차수": serial_no,
+                    "전표유형": "일반",
+                    "작성부서": "회계팀",
+                    "작성자" : "VOUCHERAI",
+                    "상태" : "승인",
+                    "통화" : "KRW",
+                    "증빙유형" : voucher_data["증빙유형"],
+                    "생성일시" : now,
+                    "수정일시" : now,
+                    "승인일시" : now,
+                    "생성자" : "VOUCHERAI",
+                    "수정자" : "VOUCHERAI",
+                    "승인자" : confirmer_name,
+
+                    #전표 라인
+                    "차변/대변구분": "차변",
+                    "계정과목": voucher_data["계정과목"],
+                    "계정코드": voucher_data["계정코드"],
+                    "금액" : amount_per_member,
+                    "거래처코드" : voucher_data["거래처코드"],
+                    "거래처명": voucher_data["거래처"],
+                    "사업자등록번호": voucher_data["사업자등록번호"], # 거래처코드와 매핑 확장 
+                    "적요": make_text_for_journal(voucher_data["증빙유형"], voucher_data["날짜"], member, voucher_data["거래처"], voucher_data["유형"]),
+                    "차변": int(amount_per_member),
+                    "대변": 0,
+                    "프로젝트코드" : f"{member}001", #추후 table로 가져오도록 구성 필요
+                    "프로젝트명" : member,
+                    "사용부서명" : manager_name,
+                    "지출유형" : voucher_data["유형"]
+                })
+                serial_no += 1
+        else:
+            debit_rows.append({
+                #전표 헤더
+                "회사코드": "001",
+                "회사명": COMPANY_NAME,
+                "회계일자": voucher_data["날짜"],
+                "묶음번호": journal_no+1,
+                "전표차수": serial_no,
+                "전표유형": "일반",
+                "작성부서": "회계팀",
+                "작성자" : "VOUCHERAI",
+                "상태" : "승인",
+                "통화" : "KRW",
+                "증빙유형" : voucher_data["증빙유형"],
+                "생성일시" : now,
+                "수정일시" : now,
+                "승인일시" : now,
+                "생성자" : "VOUCHERAI",
+                "수정자" : "VOUCHERAI",
+                "승인자" : confirmer_name,
+
+                #전표 라인
+                "차변/대변구분": "차변",
+                "계정과목": voucher_data["계정과목"],
+                "계정코드": voucher_data["계정코드"],
+                "금액" : voucher_data["금액"],
+                "거래처코드" : voucher_data["거래처코드"],
+                "거래처명": voucher_data["거래처"],
+                "사업자등록번호": voucher_data["사업자등록번호"], # 거래처코드와 매핑 확장 
+                "적요": make_text_for_journal(voucher_data["증빙유형"], voucher_data["날짜"], artist_name, voucher_data["거래처"], voucher_data["유형"]),
+                "차변": voucher_data["금액"],
+                "대변": 0,
+                "프로젝트코드" : artist_code,
+                "프로젝트명" : artist_name,
+                "사용부서명" : manager_name,
+                "지출유형" : voucher_data["유형"]
+            })
+        journal_entry["credit"] = credit_row
+        journal_entry["debit"] = debit_rows
+        journal_entries[record_id] = journal_entry
+        record_id += 1
+
+    return journal_entries
+
+def _round_krw(x: Decimal) -> int:
+    # 원화 정수 금액 반올림 (ROUND_HALF_UP)
+    return int(x.quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+
+def make_journal_entry_to_record_list(journal_dict: dict, image_path: str= None) -> pd.DataFrame:
+    rows = []
+    for record_id, journal_entry_data in journal_dict.items():
+        for debit_and_credit, entry_rows in journal_entry_data.items():
+            for entry_row in entry_rows:
+                rows.append({**entry_row, "file_id": os.path.basename(image_path) if image_path else None})
+    return rows
+
+# 적요는 자동생성이므로 핵심만 파악할 수 있도록 
+# 예: 연월일_아티스트명_거래처명_유형
+
+def make_text_for_journal(doc_type:str, date:str, artist_name:str, account_name:str, type:str):
+    """
+    inputs
+        doc_type: 문서 유형
+        date: 연월일(YYYY-MM-DD)
+        artist_name: 아티스트명
+        account_name: 거래처명
+        type: 유형
+    output:
+        "세금계산서_20250822_HUNTRIX_김복자_연예보조_의상ㆍ스타일링"
+    """
+    # 식별에 실패한 경우를 위한 에러처리 추가필요
+    return f"{doc_type}_{date.replace('-','')}_{artist_name}_{account_name}_{type}"
+
+if __name__ == "__main__":
+    test_json =     [{'날짜': [{'value': '25/08/1120', 'source_id': None}], '거래처': [{'value': '...', 'source_id': None}], '금액': [{'value': '4000', 'source_id': 'p0_00004'}], '유형': ['식비'], '사업자등록번호': [{'value': '...', 'source_id': None}], '대표자': [{'value': '...', 'source_id': None}], '주소': [{'value': '...', 'source_id': None}], '계정과목': '복리후생비_식대', '계정코드': 51103}]
+
+    # journal_entry = make_journal_entry(test_json, erp='dz')
+    # print(journal_entry)
+
+
+    journal_entry = get_json_wt_one_value_from_extract_invoice_fields(test_json)
+    print(journal_entry)

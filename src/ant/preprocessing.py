@@ -9,6 +9,9 @@ from typing import List, Dict, Any, Optional
 from src.ant.ocr_document import OCRDocument
 from src.ant.utils import _normalize_bbox
 import re
+from loguru import logger
+from src.utils.constants import VENDOR_TABLE_PATH
+import json
 
 def _is_amount_token(s: str) -> bool:
     """
@@ -238,3 +241,23 @@ def add_account_name(data: Dict[str, Any]):
         data["계정코드"] = ACCOUNT_CODE_MAP[data["계정과목"]]
     else:
         raise ValueError(f"ACCOUNT_CODE_MAP에 {data['계정과목']} 키가 없습니다.")
+    
+
+def add_artist_name(data: Dict[str, Any], artist_name: str = None) -> None:
+    data["프로젝트명"] = artist_name
+    return data
+
+def load_vendor_table() -> Dict[str, Any]:
+    with open(VENDOR_TABLE_PATH, "r", encoding="utf-8") as f:
+        vendor_table = json.load(f)
+    return vendor_table
+
+def add_vendor_code(data: Dict[str, Any]) -> None:
+    vendor_table = load_vendor_table()
+    vendor_code = vendor_table.get(data["사업자등록번호"][0]["value"]) # 리스트 형태 유지할것인지 고민
+    # vendor_code = vendor_table.get(data["사업자등록번호"])
+    if vendor_code:
+        data["거래처코드"] = vendor_code["code"]
+        data["거래처명"] = vendor_code["name"]
+    logger.info(f"거래처 코드 추가 완료: {data['사업자등록번호']} -> {data['거래처코드']}")
+    return data

@@ -20,13 +20,15 @@ from src.ant.visualization import build_selections_for_viz, draw_overlays, expor
 from src.ant.load_llm import load_llm_model  # <- 당신 환경에 맞게 경로 조정
 # ──────────────────────────────────────────────────────────────────────────────
 # 2) 전처리 함수
-from src.ant.preprocessing import _find_date_candidates, _find_amount_candidates, _find_company_like, _find_bizno_candidates, _find_ceo_candidates, _find_address_candidates, build_candidates, add_account_name
+from src.ant.preprocessing import _find_date_candidates, _find_amount_candidates, _find_company_like, _find_bizno_candidates, _find_ceo_candidates, _find_address_candidates, build_candidates, add_account_name, add_artist_name, add_vendor_code
 # ──────────────────────────────────────────────────────────────────────────────
 # 3) LLM 컨텍스트 구성
-from src.ant.constants import SYSTEM_PROMPT, USER_HARD_PROMPT, CATEGORY, ACCOUNT_MAP, ACCOUNT_CODE_MAP, REQUIRED_FIELDS, RESULT_FIELDS
+from src.ant.constants import SYSTEM_PROMPT, USER_HARD_PROMPT, CATEGORY, ACCOUNT_MAP, ACCOUNT_CODE_MAP, REQUIRED_FIELDS, RESULT_FIELDS, DOCUMENT_TYPE
 
 from src.ant.categorize import _normalize_token_ko
-from src.utils.constants import LLM_MODEL_NAME, OVERLAY_DIR, THUMBNAIL_DIR, EXTRACTED_JSON_DIR
+from src.utils.constants import LLM_MODEL_NAME, OVERLAY_DIR, THUMBNAIL_DIR, EXTRACTED_JSON_DIR, VENDOR_TABLE_PATH
+from loguru import logger
+
 
 def build_llm_messages(doc: OCRDocument) -> List[Dict[str, object]]:
     """
@@ -49,7 +51,7 @@ def build_llm_messages(doc: OCRDocument) -> List[Dict[str, object]]:
         if any(k in ln for k in ["공급가액", "세액", "합계", "품목", "공 급 받 는 자", "공급자"]):
             key_lines.append(ln.strip())
     for ln in doc.raw_text_lines:
-        if any(k in ln for k in ["주식회사", "(주)", "㈜", "오늘의집"]):
+        if any(k in ln for k in ["주식회사", "(주)", "㈜"]):
             key_lines.append(ln.strip())
 
     # 후보 레지스트리(ID+좌표)
@@ -66,6 +68,7 @@ def build_llm_messages(doc: OCRDocument) -> List[Dict[str, object]]:
             "주소": addr_cands,
         },
         "CATEGORY": list(dict.fromkeys(CATEGORY)),  # 카테고리는 '목록'만 제공
+        "DOCUMENT_TYPE": list(dict.fromkeys(DOCUMENT_TYPE)),  # 증빙유형은 '목록'만 제공
         "힌트라인": key_lines[:16],
         "candidates": candidates,                   # ← 핵심: ID + bbox 제공
         "참고": (
@@ -238,12 +241,16 @@ def _validate_and_coerce(data: Dict[str, Any]) -> None:
 #     }
 #     return out
 
-def extract_with_locations(ocr_json, model_name: str = "gpt4o_latest") -> Tuple[Dict[str, Any], List[Dict[str, Any]], List[Dict[str, Any]]]:
+def extract_with_locations(ocr_json, artist_name: str = None, model_name: str = "gpt4o_latest") -> Tuple[Dict[str, Any], List[Dict[str, Any]], List[Dict[str, Any]]]:
     """
     확장 버전:
     - 반환 1: 구조화 결과(data)  → 각 필드가 [{"value","source_id"}] 구조
     - 반환 2: candidates         → [{"id","text","bbox","tag"}] 전체 후보 레지스트리
     - 반환 3: selections         → 시각화용 [{"field","value","source_id","bbox"}]
+
+    input:
+    - artist_name: OCR 이전 단계에서 사용자가 입력한 아티스트명 정보
+    - ocr_json: OCR 결과 딕셔너리
     """
     if isinstance(ocr_json, str):
         ocr_json = json.loads(ocr_json)
@@ -263,9 +270,10 @@ def extract_with_locations(ocr_json, model_name: str = "gpt4o_latest") -> Tuple[
     _validate_and_coerce(data)
     add_account_name(data)
     selections = build_selections_for_viz(data, candidates)
-
-
+    add_artist_name(data,artist_name)
+    add_vendor_code(data)
     return data, candidates, selections
+
 
 def extract_with_locations_and_save(ocr_json: Dict[str, Any], model_name: str = "gpt4o_latest") -> Tuple[Dict[str, Any], List[Dict[str, Any]], List[Dict[str, Any]]]:
     data, candidates, selections = extract_with_locations(ocr_json, model_name)
