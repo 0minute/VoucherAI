@@ -175,25 +175,56 @@ def initial_guess_from_filename(filename: str) -> Optional[str]:
 
 # ===== 파이프라인 실행 =====
 def run_pipeline_from_bytes(file_bytes: bytes, file_name: str) -> pd.DataFrame:
+    # tmp_dir = Path("./.tmp"); tmp_dir.mkdir(exist_ok=True)
+    # tmp_path = tmp_dir / file_name
+    # tmp_path.write_bytes(file_bytes)
+
+    # input_path = str(tmp_path)
+    # data_dict = json.load(open(input_path, "r", encoding="utf-8"))
+    # data_dict = get_json_wt_one_value_from_extract_invoice_fields(data_dict)
+    # data_dict = [data_dict]
+    # data_dict = drop_source_id_from_json(data_dict)
+    # result_dict = make_journal_entry(data_dict)  # 내부에서 프로젝트명 매핑 가정
+    # record_list = make_journal_entry_to_record_list(result_dict, input_path)
+    # df = pd.DataFrame(record_list)
+
+    # if "프로젝트명" not in df.columns:
+    #     guess = initial_guess_from_filename(file_name)
+    #     if guess:
+    #         df["프로젝트명"] = guess
+    # return df
     tmp_dir = Path("./.tmp"); tmp_dir.mkdir(exist_ok=True)
     tmp_path = tmp_dir / file_name
     tmp_path.write_bytes(file_bytes)
 
     input_path = str(tmp_path)
-    data_dict = json.load(open(input_path, "r", encoding="utf-8"))
-    data_dict = get_json_wt_one_value_from_extract_invoice_fields(data_dict)
-    data_dict = [data_dict]
-    data_dict = drop_source_id_from_json(data_dict)
-    result_dict = make_journal_entry(data_dict)  # 내부에서 프로젝트명 매핑 가정
+    raw_dict = json.load(open(input_path, "r", encoding="utf-8"))
+    processed_dict = get_json_wt_one_value_from_extract_invoice_fields(raw_dict)
+    # 편집 재실행 대비: 추후 패치 적용용으로 저장
+    st.session_state["last_input_dict"] = processed_dict
+
+    data_list = [processed_dict]
+    data_list = drop_source_id_from_json(data_list)
+    result_dict = make_journal_entry(data_list)
     record_list = make_journal_entry_to_record_list(result_dict, input_path)
     df = pd.DataFrame(record_list)
 
+    # 파일명 힌트
     if "프로젝트명" not in df.columns:
         guess = initial_guess_from_filename(file_name)
         if guess:
             df["프로젝트명"] = guess
-    return df
 
+    # (★추가) 원본 메타를 키로 보관: file_id > 파일명
+    meta_map = {}
+    for e in result_dict.get("entries", []):
+        meta = e.get("meta", {})
+        key = meta.get("file_id") or os.path.basename(input_path)
+        meta_map[str(key)] = meta
+    st.session_state["meta_map"] = meta_map
+    st.session_state["last_file_key"] = os.path.basename(input_path)
+
+    return df
 # ===== 이미지 인덱스 로더/인코더 =====
 def _guess_mime(path: str) -> str:
     ext = os.path.splitext(path)[1].lower()
@@ -222,17 +253,66 @@ def build_data_uri_map(overlay_index: Dict[str, str]) -> Dict[str, str]:
 
 # ===== Hover Preview 컴포넌트 =====
 def render_journal_table_with_hover_tooltip(
-    df,
-    overlay_index,
+    df: pd.DataFrame,
+    overlay_index: Dict[str, str],
     container_height_px: int = 820,
-    fixed_height: bool = True,        # ← True면 height 고정 / False면 max-height 동작
-    min_height: bool = False          # ← True면 min-height로 “최소 높이”만 보장
+    fixed_height: bool = True,
+    min_height: bool = False,
+    meta_map: Optional[Dict[str, Any]] = None,   # ★ 원본 메타 맵 주입
 ):
     import base64, os, json
     from typing import Optional
     from streamlit.components.v1 import html as st_html
 
-
+    temp_dict = {"HUNTRIX_data.json":{
+    "날짜": [
+        {
+            "value": "20-12-31",
+            "source_id": "p0_00011"
+        }
+    ],
+    "거래처": [
+        {
+            "value": "HUNTER피부과",
+            "source_id": None
+        }
+    ],
+    "금액": [
+        {
+            "value": "1452000",
+            "source_id": "p0_00023"
+        }
+    ],
+    "유형": [
+        "피부"
+    ],
+    "사업자등록번호": [
+        {
+            "value": "000-00-00000",
+            "source_id": "p0_00001"
+        }
+    ],
+    "대표자": [
+        {
+            "value": "OOO",
+            "source_id": None
+        }
+    ],
+    "주소": [
+        {
+            "value": "서울특별시",
+            "source_id": None
+        }
+    ],
+    "증빙유형": [
+        "세금계산서"
+    ],
+    "계정과목": "연예보조_기타",
+    "계정코드": 53899,
+    "프로젝트명": None,
+    "거래처코드": "10001",
+    "거래처명": "HUNTRIX한의원"
+}}
     if df is None or df.empty:
         st.info("분개 결과가 없습니다.")
         return
@@ -242,6 +322,7 @@ def render_journal_table_with_hover_tooltip(
         st.warning("미리보기를 위해 'file_id' 또는 '파일명' 컬럼이 필요합니다.")
         return
 
+    # ----- 이미지 data URI 준비 (데모/로컬용) -----
     def _guess_mime(path: str) -> str:
         ext = os.path.splitext(path)[1].lower()
         if ext in (".jpg", ".jpeg"): return "image/jpeg"
@@ -262,7 +343,8 @@ def render_journal_table_with_hover_tooltip(
             uri = _to_data_uri(v)
             if uri: data_uri_map[str(k)] = uri
 
-    # 표시 컬럼
+    # ----- 표시 컬럼/값 준비 -----
+    cols_pref = ["행","날짜","거래처명","프로젝트명","계정과목","차변","대변",key_col]
     show_cols = list(df.columns)
 
     def _fmt(v):
@@ -275,38 +357,63 @@ def render_journal_table_with_hover_tooltip(
 
     rows = [{c: _fmt(r[c]) for c in show_cols} for _, r in df.iterrows()]
 
-    payload = {"rows": rows, "key_col": key_col, "img_map": data_uri_map, "cols": show_cols}
+    # ----- 모달용 원본 메타 전달 -----
+    meta_map = meta_map or temp_dict #시연용 임시 meta_map = meta_map or {}
+    # 편집폼 렌더 시 첫번째 값 추출 함수는 JS에서 수행
+
+    payload = {
+        "rows": rows,
+        "cols": show_cols,
+        "key_col": key_col,
+        "img_map": data_uri_map,
+        "meta_map": meta_map,          # ★ JS로 전달
+    }
     payload_json = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
 
+    # 높이 고정/최소/최대 선택
+    if fixed_height:
+        root_height_decl = f"height: {container_height_px}px;"
+    elif min_height:
+        root_height_decl = f"min-height: {container_height_px}px;"
+    else:
+        root_height_decl = f"max-height: {container_height_px}px;"
+
     html_template = r"""
+
+    
 <!DOCTYPE html>
 <html><head><meta charset="utf-8">
 <style>
   :root { --row-gap: 8px; --bg: rgba(11,11,17,0.9); }
-  html, body { margin:0; padding:0; background: var(--bg); }
+  html, body { margin:0; padding:0; background: var(--bg); color:#e6e6f0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR"; }
+  #root { position: relative; __ROOT_HEIGHT_DECL__; overflow: auto; padding: 0 0 var(--row-gap) 0; }
 
-  /* 루트 스크롤 컨테이너: ⬇⬇ 여기 높이 고정/최소/최대 중 선택 */
-  #root {
-    position: relative;
-    __ROOT_HEIGHT_DECL__;       /* <- 여기 교체: height / min-height / max-height */
-    overflow: auto;
-    padding: 0 0 var(--row-gap) 0;
-  }
-
-  table.tbl { width:100%; border-collapse:separate; border-spacing:0 var(--row-gap);
-              font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR";
-              font-size:14px; color:#e6e6f0; }
-  .tbl thead th { position:sticky; top:0; background:var(--bg); text-align:left; font-weight:700;
-                  padding:8px 10px; color:#cfcfe3; z-index:2; }
+  table.tbl { width:100%; border-collapse:separate; border-spacing:0 var(--row-gap); font-size:14px; }
+  .tbl thead th { position:sticky; top:0; background:var(--bg); text-align:left; font-weight:700; padding:8px 10px; color:#cfcfe3; z-index:2; }
   .tbl tbody tr { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); }
   .tbl tbody tr:hover { background:rgba(124,58,237,0.16); border-color:rgba(124,58,237,0.35); }
   .tbl td { padding:10px 10px; white-space:nowrap; }
 
-  #ent-tip { position:absolute; z-index:9999; display:none; pointer-events:none;
-             background:rgba(0,0,0,0.82); border:1px solid rgba(255,255,255,0.12);
-             border-radius:12px; padding:6px; box-shadow:0 8px 32px rgba(0,0,0,0.45);
-             max-width:880px; max-height:880px; }
-  #ent-tip img { display:block; max-width:840px; max-height:840px; object-fit:contain; }
+  /* 툴팁(커서 옆 이미지) */
+  #ent-tip { position:absolute; z-index:9999; display:none; pointer-events:none; background:rgba(0,0,0,0.82);
+             border:1px solid rgba(255,255,255,0.12); border-radius:12px; padding:6px; box-shadow:0 8px 32px rgba(0,0,0,0.45);
+             max-width:800px; max-height:800px; }
+  #ent-tip img { display:block; max-width:800px; max-height:800px; object-fit:contain; }
+
+  /* 모달 */
+  #modal-backdrop { position:absolute; inset:0; background:rgba(0,0,0,0.55); display:none; z-index:9998; }
+  #modal { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+           width:min(820px, 92%); max-height:80%; overflow:auto;
+           background:#0f0f16; border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px; display:none; z-index:9999; }
+  .modal-title { font-weight:800; margin:0 0 8px 0; font-size:18px; }
+  .kv-grid { display:grid; grid-template-columns: 220px 1fr; column-gap:12px; row-gap:8px; }
+  .kv-key { color:#bdbdd0; padding:6px 8px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; }
+  .kv-value { padding:6px 8px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; }
+  .kv-value input { width:100%; background:transparent; border:none; outline:none; color:#e6e6f0; font-size:14px; }
+  .modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
+  .btn { padding:8px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.06); color:#e6e6f0; cursor:pointer; }
+  .btn.primary { background:linear-gradient(135deg, #7C3AED, #EC4899); border:none; }
+  .btn.danger  { background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.45); }
 </style>
 </head>
 <body>
@@ -316,16 +423,40 @@ def render_journal_table_with_hover_tooltip(
       <tbody id="tbody"></tbody>
     </table>
     <div id="ent-tip"><img id="ent-img" alt="preview"></div>
+
+    <!-- 모달 -->
+    <div id="modal-backdrop"></div>
+    <div id="modal">
+      <h3 class="modal-title">원본 정보 편집</h3>
+      <div id="kv" class="kv-grid"></div>
+      <div class="modal-actions">
+        <button class="btn danger" id="btn-download">변경사항 JSON 다운로드</button>
+        <div style="flex:1"></div>
+        <button class="btn" id="btn-cancel">취소</button>
+        <button class="btn primary" id="btn-save">저장(표시값 갱신)</button>
+      </div>
+    </div>
   </div>
+
   <script id="PAYLOAD" type="application/json">__PAYLOAD__</script>
 <script>
-const P   = JSON.parse(document.getElementById('PAYLOAD').textContent);
-const ROWS= P.rows, COLS=P.cols, KEY=P.key_col, IMG=P.img_map;
-const root= document.getElementById('root');
-const thead=document.getElementById('thead');
-const tbody=document.getElementById('tbody');
-const tip = document.getElementById('ent-tip');
-const tipImg=document.getElementById('ent-img');
+const P       = JSON.parse(document.getElementById('PAYLOAD').textContent);
+const ROWS    = P.rows, COLS = P.cols, KEY = P.key_col, IMG = P.img_map || {};
+const META    = P.meta_map || {};
+
+const root    = document.getElementById('root');
+const thead   = document.getElementById('thead');
+const tbody   = document.getElementById('tbody');
+const tip     = document.getElementById('ent-tip');
+const tipImg  = document.getElementById('ent-img');
+
+const modalBackdrop = document.getElementById('modal-backdrop');
+const modal         = document.getElementById('modal');
+const kv            = document.getElementById('kv');
+const btnCancel     = document.getElementById('btn-cancel');
+const btnSave       = document.getElementById('btn-save');
+const btnDownload   = document.getElementById('btn-download');
+
 const OFFSET_X=18, OFFSET_Y=18;
 
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
@@ -338,61 +469,117 @@ tbody.innerHTML = ROWS.map(r=>{
   return `<tr data-key="${esc(String(key))}">${cells}</tr>`;
 }).join('');
 
-/* 컨테이너 기준 좌표로 배치 */
+/* 툴팁 위치 (컨테이너 기준) */
 function placeTip(evt){
   if (tip.style.display!=='block') return;
   const rect = root.getBoundingClientRect();
-  // 마우스의 뷰포트 좌표(client) → 컨테이너 좌표로 변환
   let x = (evt.clientX - rect.left) + root.scrollLeft + OFFSET_X;
   let y = (evt.clientY - rect.top)  + root.scrollTop  + OFFSET_Y;
-
-  // 컨테이너 경계 내 클램핑
-  const w = tip.offsetWidth  || 300;
-  const h = tip.offsetHeight || 300;
-  const maxX = root.scrollWidth  - w - 4;
-  const maxY = root.scrollHeight - h - 4;
+  const w = tip.offsetWidth||300, h = tip.offsetHeight||300;
+  const maxX = root.scrollWidth - w - 4, maxY = root.scrollHeight - h - 4;
   if (x > maxX) x = Math.max(4, (evt.clientX - rect.left) + root.scrollLeft - w - OFFSET_X);
   if (y > maxY) y = Math.max(4, (evt.clientY - rect.top)  + root.scrollTop  - h - OFFSET_Y);
-
-  tip.style.left = x + 'px';
-  tip.style.top  = y + 'px';
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
 }
 
+/* Hover 미리보기 */
 tbody.addEventListener('mouseover', (e)=>{
   const tr = e.target.closest('tr'); if(!tr) return;
   const key = tr.getAttribute('data-key');
   const src = IMG[key];
-  if (src){
-    if (tipImg.src !== src) tipImg.src = src;
-    tip.style.display='block';
-    placeTip(e);
-  } else {
-    tip.style.display='none';
-    tipImg.src='';
-  }
+  if (src) { if (tipImg.src!==src) tipImg.src=src; tip.style.display='block'; placeTip(e); }
+  else { tip.style.display='none'; tipImg.src=''; }
 });
-
 tbody.addEventListener('mousemove', placeTip);
 root.addEventListener('mouseleave', ()=>{ tip.style.display='none'; tipImg.src=''; });
+
+/* === 더블클릭: 모달 열기 === */
+let currentKey = null;
+tbody.addEventListener('dblclick', (e)=>{
+  const tr = e.target.closest('tr'); if(!tr) return;
+  const key = tr.getAttribute('data-key');
+  currentKey = key;
+
+  const meta = META[key] || {};
+  // 폼 초기화
+  kv.innerHTML = '';
+  // 메타를 key/value 편집행으로 변환: 리스트면 첫번째, dict 리스트면 첫 원소.value
+  const fields = Object.keys(meta);
+  fields.forEach(k=>{
+    let v = meta[k];
+    let display = '';
+    if (Array.isArray(v)) {
+      if (v.length>0) {
+        if (typeof v[0]==='object' && v[0] && 'value' in v[0]) display = v[0]['value'] ?? '';
+        else display = String(v[0] ?? '');
+      }
+    } else {
+      display = (typeof v==='object' && v && 'value' in v) ? (v['value'] ?? '') : String(v ?? '');
+    }
+    const row = document.createElement('div');
+    row.className = 'kv-key';
+    row.textContent = k;
+    const val = document.createElement('div');
+    val.className = 'kv-value';
+    val.innerHTML = `<input type="text" value="${esc(display)}" data-field="${esc(k)}" />`;
+    kv.appendChild(row);
+    kv.appendChild(val);
+  });
+
+  modalBackdrop.style.display='block';
+  modal.style.display='block';
+});
+
+/* 모달 버튼 */
+btnCancel.addEventListener('click', ()=>{
+  modalBackdrop.style.display='none';
+  modal.style.display='none';
+});
+
+/* 저장: 화면상의 ROWS/셀만 갱신 */
+btnSave.addEventListener('click', ()=>{
+  if (!currentKey) return;
+  const inputs = kv.querySelectorAll('input[data-field]');
+  // 패치 사전 준비
+  const patch = {};
+  inputs.forEach(inp => { patch[inp.getAttribute('data-field')] = inp.value; });
+
+  // 표시 컬럼 동기화: "날짜", "거래처명"(또는 "거래처"), "금액","유형","계정과목","프로젝트명" 등 있는 경우 갱신
+  const row = ROWS.find(r => String(r[KEY])===String(currentKey));
+  if (row) {
+    const mapping = ["날짜","거래처명","거래처","금액","유형","계정과목","프로젝트명","주소","대표자","사업자등록번호"];
+    mapping.forEach(m => { if (m in patch && m in row) row[m] = patch[m]; });
+    // 테이블 재렌더 간단화: 해당 tr만 다시 그림
+    const tr = tbody.querySelector(`tr[data-key="${CSS.escape(String(currentKey))}"]`);
+    if (tr) {
+      tr.innerHTML = COLS.map(c => `<td>${esc(row[c] ?? '')}</td>`).join('');
+    }
+  }
+
+  modalBackdrop.style.display='none';
+  modal.style.display='none';
+});
+
+/* 패치 JSON 다운로드: { "<key>": { field: value, ... } } */
+btnDownload.addEventListener('click', ()=>{
+  if (!currentKey) return;
+  const inputs = kv.querySelectorAll('input[data-field]');
+  const o = {}; inputs.forEach(inp=>{ o[inp.getAttribute('data-field')] = inp.value; });
+  const blob = new Blob([JSON.stringify({ [currentKey]: o }, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `row_patch_${currentKey}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+});
 </script>
 </body></html>
     """
 
-    # 높이 선언 선택: height / min-height / max-height
-    if fixed_height:
-        root_height_decl = f"height: {container_height_px}px;"
-    elif min_height:
-        root_height_decl = f"min-height: {container_height_px}px;"
-    else:
-        root_height_decl = f"max-height: {container_height_px}px;"
-
     html_final = (
         html_template
-        .replace("__PAYLOAD__", payload_json)      # 기존 payload_json 주입 부분 유지
+        .replace("__PAYLOAD__", payload_json)
         .replace("__ROOT_HEIGHT_DECL__", root_height_decl)
     )
-
-    # iframe 자체도 충분히 키워야 내부 컨테이너가 안잘림
     st_html(html_final, height=container_height_px + 24, scrolling=False)
 
 
@@ -516,7 +703,7 @@ def main():
 
         # Hover Preview (커스텀)
         st.markdown('<div class="soft-card">', unsafe_allow_html=True)
-        st.subheader("3) Hover 미리보기 테이블", divider="grey")
+        st.subheader("분개 생성 결과", divider="grey")
         overlay_index = st.session_state.get("overlay_index") or {}
         if not overlay_index and Path("overlay_index.json").exists():
             try:
@@ -527,7 +714,12 @@ def main():
         overlay_index = {
             "HUNTRIX_data.json": "test\\3. VISUALIZATION\\OUTPUT\\HUNTRIX_overlay.png"
         }
-        render_journal_table_with_hover_tooltip(df, overlay_index)
+        meta_map = st.session_state.get("meta_map") or {}
+        render_journal_table_with_hover_tooltip(
+            df, overlay_index,
+            container_height_px=900, fixed_height=True,
+            meta_map=meta_map,   # ★ 원본 메타 전달
+        )
         st.markdown('</div>', unsafe_allow_html=True)
 
     # 오른쪽: 규칙 & 인덱스 업로드

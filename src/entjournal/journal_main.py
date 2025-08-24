@@ -367,6 +367,43 @@ def make_text_for_journal(doc_type:str, date:str, artist_name:str, account_name:
     # 식별에 실패한 경우를 위한 에러처리 추가필요
     return f"{doc_type}_{date.replace('-','')}_{artist_name}_{account_name}_{type}"
 
+def edit_voucher_data_show(file_id:str):
+    # 선택한 전표의 voucher_Data를 가져와야함
+    #todo 지금은 스트림릿의 세션에서 file_id를 저장하고있어서 그걸 가져다 쓰고 있는데, 구조 고민하기
+    #voucher_data 구조 바꿔야할 듯? 리스트 형태 버리기
+    def _get_voucher_data_by_file_id(file_id):
+        pass
+    voucher_data = _get_voucher_data_by_file_id(file_id)
+
+    return voucher_data
+
+def edit_voucher_data_save(file_id:str, updated_voucher_data):
+    # 지금 streamlit 기준으로는 session에 다시 저장한 후에 journal 생성하면 됨
+    # 그래도 DB에서 기억을 하는게 맞을 것 같음.
+    # 현재 voucher_data db를 가져오기
+    def load_voucher_data_db():
+        pass
+    voucher_db = load_voucher_data_db
+    # 프런트에서 준 내용으로 업데이트
+    def update_voucher_data_db(file_id, updated_voucher_data):
+        pass
+    # 결과 저장
+    updated_voucher_db = update_voucher_data_db(file_id, updated_voucher_data)
+    def save_voucher_data_db(updated_voucher_db):
+        pass
+    # journal_entry 재생성
+    def refresh_journal_entry():
+        pass
+    result = refresh_journal_entry()
+    return result
+
+
+
+
+
+
+
+
 if __name__ == "__main__":
     test_json =     [{'날짜': [{'value': '25/08/1120', 'source_id': None}], '거래처': [{'value': '...', 'source_id': None}], '금액': [{'value': '4000', 'source_id': 'p0_00004'}], '유형': ['식비'], '사업자등록번호': [{'value': '...', 'source_id': None}], '대표자': [{'value': '...', 'source_id': None}], '주소': [{'value': '...', 'source_id': None}], '계정과목': '복리후생비_식대', '계정코드': 51103}]
 
