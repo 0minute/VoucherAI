@@ -37,6 +37,7 @@ def ensure_workspace(workspace_name: str) -> dict:
         base / INTERMEDIATE_FOLDER / OCR_FOLDER,
         base / INTERMEDIATE_FOLDER / LLM_FOLDER,
         base / INTERMEDIATE_FOLDER / JOURNAL_FOLDER,
+        base / INTERMEDIATE_FOLDER / VISUALIZATION_FOLDER,
         base / FINAL_OUTPUT_FOLDER,
         base / LOGS_FOLDER,
         base / DB_FOLDER,  # ← 추가
@@ -80,6 +81,7 @@ def init_setting_file(workspace_name: str) -> None:
             "uploaded": [],        # ex) ["input_files/a.pdf", ...]
             "ocr_results": [],     # ex) ["intermediate/ocr_results/a.json", ...]
             "llm_results": [],     # ex) ["intermediate/llm_results/a.json", ...]
+            "visualization": {},    # ex) {"a.png": "intermediate/visualization/a.png", ...}
             "journal_drafts": [],  # ex) ["intermediate/journal_entries/journal_v1.csv"]
             "final_artifacts": []  # ex) [{"format":"xlsx","path":"...","version": 3}, ...]
         }
@@ -150,6 +152,12 @@ def add_llm_results(workspace_name: str, paths: Iterable[str]) -> None:
     current = set(data.get("files", {}).get("llm_results", []))
     current.update(paths)
     data["files"]["llm_results"] = sorted(current)
+    _write_setting(sf, data)
+
+def add_visualization(workspace_name: str, img_dict: dict) -> None:
+    sf = get_setting_file(workspace_name)
+    data = _read_setting(sf)
+    data["files"]["visualization"] = img_dict
     _write_setting(sf, data)
 
 def add_journal_drafts(workspace_name: str, paths: Iterable[str]) -> None:

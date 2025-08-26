@@ -1,10 +1,34 @@
-from src.api.workspace import ensure_workspace, delete_workspace, list_workspaces, set_target_period, set_line_count, add_uploaded_files, rename_workspace, _read_setting
-from src.api.upload import upload_images_to_workspace, list_uploaded_files, extract_zip_to_workspace, set_files_excluded, bulk_set_file_project, remove_uploaded_files_setting
-from src.api.constants import get_setting_file, DEFAULT_ALLOWED_EXT
+from src.api.workspace import (ensure_workspace, 
+                               delete_workspace, 
+                               list_workspaces, 
+                               set_target_period, 
+                               set_line_count, 
+                               add_uploaded_files, 
+                               rename_workspace, 
+                               _read_setting, 
+                               add_ocr_results, 
+                               add_llm_results, 
+                               add_visualization, 
+                               add_journal_drafts)
+from src.api.upload import upload_images_to_workspace, list_uploaded_files, extract_zip_to_workspace, set_files_excluded, bulk_set_file_project, remove_uploaded_files_setting, get_uploaded_files_path
+from src.api.constants import (get_setting_file, 
+                               DEFAULT_ALLOWED_EXT, 
+                               get_ocr_path, 
+                               get_llm_path, 
+                               get_visualization_path, 
+                               get_journal_path,
+                               get_voucher_db_path,
+                               get_central_db_path)
 from src.api.models.upload_models import UploadFile, compute_file_meta, UploadsIndexRepository, get_uploads_repo
+from src.ant.llm_main import extract_with_locations, draw_overlays
+from src.entjournal.journal_main import get_json_wt_one_value_from_extract_invoice_fields, drop_source_id_from_json, make_journal_entry, make_journal_entry_to_record_list
 from pathlib import Path
 from typing import Union, Iterable
 from src.api.utils import _now_iso
+from src.entocr.ocr_main import ocr_image_and_save_json_by_extension
+from src.api.db import read_voucher_data, update_voucher_data
+import json
+import os
 
 #A. 워크스페이스
 # - 워크스페이스 생성
@@ -199,12 +223,112 @@ def patch_set_project_name(workspace_name: str, filepath_and_project_name_dict: 
     return res
 
 # C. OCR 추출 및 분개 추출
+# - OCR - 시각화 - 분개추출
+# 중간 오류 발생 처리를 위해 구조 개선 필요 
 def post_run_ocr_and_journal(workspace_name: str) -> None:
-    pass
+    uploaded_files = get_uploaded_files_path(workspace_name)
+    ocr_results_l = []
+    llm_results_l = []
+    visualization_d = {}
+    journal_entry_l = []
+    for file in uploaded_files:
+        ocr_result = ocr_image_and_save_json_by_extension(file)
+        if ocr_result:
+            # OCR RESULT 폴더에 저장
+            output_path = os.path.join(get_ocr_path(workspace_name), file.split("/")[-1].split(".")[0] + ".json")
+            with open(output_path, "w", encoding="utf-8") as f:
+                json.dump(ocr_result, f, ensure_ascii=False, indent=4)
+            ocr_results_l.append(output_path)
 
-# D. VoucherData 수정
-def patch_update_voucher_data(workspace_name: str, edits: list[dict]) -> None:
-    pass
+            data, candidates, selections = extract_with_locations(ocr_result)
+            json.dump(data, open(os.path.join(get_llm_path(workspace_name), file.split("/")[-1].split(".")[0] + "_data.json"), "w", encoding="utf-8"), indent=4,  ensure_ascii=False)
+            json.dump(candidates, open(os.path.join(get_llm_path(workspace_name), file.split("/")[-1].split(".")[0] + "_candidates.json"), "w", encoding="utf-8"), indent=4,  ensure_ascii=False)
+            json.dump(selections, open(os.path.join(get_llm_path(workspace_name), file.split("/")[-1].split(".")[0] + "_selections.json"), "w", encoding="utf-8"), indent=4,  ensure_ascii=False)
+            llm_results_l.append(os.path.join(get_llm_path(workspace_name), file.split("/")[-1].split(".")[0] + "_data.json"))
+            
+            img_path = ocr_result.get("source_image")
+            if img_path:
+                filename = os.path.basename(img_path)
+                filename_without_extension = os.path.splitext(filename)[0]
+                overlay_path = os.path.join(get_visualization_path(workspace_name), f"{filename_without_extension}_overlay.png")
+                draw_overlays(img_path, selections, overlay_path)
+                visualization_d[filename] = overlay_path
 
+            data_dict = get_json_wt_one_value_from_extract_invoice_fields(data)
+            data_dict = [data_dict]
+            data_dict = drop_source_id_from_json(data_dict)
+            result_dict = make_journal_entry(data_dict)
+            record_list = make_journal_entry_to_record_list(result_dict, os.path.basename(file))
+            journal_entry_l.append(record_list)
+            
+
+        # 추후 ocr 실패시 로깅 및 에러처리 강화 필요
+        else:
+            print(f"OCR 추출 실패: {file}")
+    add_ocr_results(workspace_name, ocr_results_l)
+    add_llm_results(workspace_name, llm_results_l)
+    add_visualization(workspace_name, visualization_d)
+    
+    journal_path = os.path.join(get_journal_path(workspace_name), "journal_entry.json")
+    json.dump(journal_entry_l, open(journal_path, "w", encoding="utf-8"), indent=4,  ensure_ascii=False)
+    add_journal_drafts(workspace_name, [journal_path])
+
+    return {"ok": True, "data": {"ocr_results": ocr_results_l}, "error": None, "ts": _now_iso() }
+
+# - 분개 조회
+def get_journal_drafts(workspace_name: str) -> list[str]:
+    journal_path = os.path.join(get_journal_path(workspace_name), "journal_entry.json")
+    journal_entry_l = json.load(open(journal_path, "r", encoding="utf-8"))
+    return {"ok": True, "data": journal_entry_l, "error": None, "ts": _now_iso() }
+
+# - 선택 레코드의 VoucherData 조회
+def get_voucher_data(workspace_name: str, file_id: str) -> dict:
+    #voucher_data는 필수 db이므로 워크스페이스 생성시 초기화함
+    voucher_data_ds = read_voucher_data(workspace_name)
+    voucher_data_d = voucher_data_ds.get(file_id, {})
+    if not voucher_data_d:
+        return {"ok": False, "data": None, "error": "Voucher data not found", "ts": _now_iso() }
+    return {"ok": True, "data": voucher_data_d, "error": None, "ts": _now_iso()}
+
+# - 선택 레코드의 VoucherData 수정
+def patch_update_voucher_data(workspace_name: str, file_id: str, edits: dict) -> None:
+    success, message = update_voucher_data(workspace_name, file_id, edits)
+    if not success:
+        return {"ok": False, "data": None, "error": message, "ts": _now_iso() }
+    return {"ok": True, "data": {"file_id": file_id, "edits": edits}, "error": None, "ts": _now_iso() }
+
+# - VoucherData 수정 후 분개 새로고침
+def refresh_journal_entries(workspace_name: str) -> None:
+    voucher_data_ds = read_voucher_data(workspace_name)
+    journal_entry_l = []
+    for file_id, data in voucher_data_ds.items():
+        # data_dict = get_json_wt_one_value_from_extract_invoice_fields(data)
+        # data_dict = [data_dict]
+        # data_dict = drop_source_id_from_json(data_dict)
+        result_dict = make_journal_entry(data)
+        record_list = make_journal_entry_to_record_list(result_dict, os.path.basename(file_id))
+        journal_entry_l.append(record_list)
+    journal_path = os.path.join(get_journal_path(workspace_name), "journal_entry.json")
+    json.dump(journal_entry_l, open(journal_path, "w", encoding="utf-8"), indent=4,  ensure_ascii=False)
+    return {"ok": True, "data": json.dumps(journal_entry_l, ensure_ascii=False, indent=4), "error": None, "ts": _now_iso() }
+
+# - 클릭한 레코드의 시각화 이미지 경로 조회
+def get_visualization_image_path(workspace_name: str, file_id: str) -> str:
+    settings_d = _read_setting(get_setting_file(workspace_name))
+    visualization_d = settings_d.get("files", {}).get("visualization", {})
+    visualization_path = visualization_d.get(file_id, "")
+    if not visualization_path:
+        return {"ok": False, "data": None, "error": "Visualization image not found", "ts": _now_iso() }
+    return {"ok": True, "data": visualization_path, "error": None, "ts": _now_iso() }
+
+# - 분개 아카이브
+def archive_journal_entry(workspace_name: str) -> None:
+    central_journal_path = os.path.join(get_central_db_path(), "journal_entry.json")
+    central_journal_entry_d = json.load(open(central_journal_path, "r", encoding="utf-8"))
+    joruanl_entry_current_path = os.path.join(get_journal_path(workspace_name), "journal_entry.json")
+    journal_entry_current_l = json.load(open(joruanl_entry_current_path, "r", encoding="utf-8"))
+    central_journal_entry_d[workspace_name] = journal_entry_current_l
+    json.dump(central_journal_entry_d, open(central_journal_path, "w", encoding="utf-8"), indent=4,  ensure_ascii=False)
+    return {"ok": True, "data": json.dumps(central_journal_entry_d, ensure_ascii=False, indent=4), "error": None, "ts": _now_iso() }
 
 

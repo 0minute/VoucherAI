@@ -121,17 +121,18 @@ def ocr_image_and_save_json_by_extension(image_path: str) -> str:
                     }
                 }
                 
-                # JSON 파일로 저장
-                import json
-                json_result = json.dumps(combined_result, ensure_ascii=False)
+            #     # JSON 파일로 저장
+            #     import json
+            #     json_result = json.dumps(combined_result, ensure_ascii=False)
                 
-                output_file = Path(output_path)
-                output_file.parent.mkdir(parents=True, exist_ok=True)
-                output_file.write_text(json_result, encoding='utf-8')
+            #     output_file = Path(output_path)
+            #     output_file.parent.mkdir(parents=True, exist_ok=True)
+            #     output_file.write_text(json_result, encoding='utf-8')
                 
-                logger.info(f"Multi-page processing completed: {output_path}")
+            #     logger.info(f"Multi-page processing completed: {output_path}")
                 
-            return output_path,json_result
+            # return output_path,json_result
+            return combined_result
             
         except Exception as e:
             logger.error(f"Error processing file {image_path}: {e}")

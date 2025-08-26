@@ -1,8 +1,8 @@
 {
   "workspace_name": "test_workspace",
-  "version": 8,
+  "version": 9,
   "created_at": "2025-08-26T06:33:49.049016Z",
-  "updated_at": "2025-08-26T06:38:34.860294Z",
+  "updated_at": "2025-08-26T15:39:35.990891Z",
   "paths": {
     "input_dir": "C:\\Users\\rekis\\Desktop\\Pythonworkspace\\voucherai\\workspace\\test_workspace\\input_files",
     "intermediate_dir": "C:\\Users\\rekis\\Desktop\\Pythonworkspace\\voucherai\\workspace\\test_workspace\\intermediate",
@@ -25,6 +25,7 @@
     ],
     "ocr_results": [],
     "llm_results": [],
+    "visualization": [],
     "journal_drafts": [],
     "final_artifacts": []
   }

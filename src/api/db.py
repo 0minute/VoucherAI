@@ -4,8 +4,24 @@ import tempfile
 import os
 from src.api.utils import _atomic_write_json, _now_iso, _read_json
 
+def initialize_voucher_data(workspace_name: str) -> None:
+    p = get_voucher_db_path(workspace_name)
+    if not p.exists():
+        p.parent.mkdir(parents=True, exist_ok=True)
+        base = {}
+        _atomic_write_json(p, base)
+
+def update_voucher_data(workspace_name: str, file_id: str, edits: dict) -> None:
+    try:
+        voucher_data_ds = read_voucher_data(workspace_name)
+        voucher_data_ds[file_id] = edits
+        write_voucher_data(workspace_name, voucher_data_ds)
+        return True, None
+    except Exception as e:
+        return False, str(e)
+
 def read_voucher_data(workspace_name: str) -> dict:
-    p = get_voucher_data_path(workspace_name)
+    p = get_voucher_db_path(workspace_name)
     if not p.exists():
         return {"schema_version": 1, "updated_at": None, "entries": []}
     return json.loads(p.read_text(encoding="utf-8"))
@@ -14,7 +30,7 @@ def write_voucher_data(workspace_name: str, data: dict) -> None:
     """
     temp 파일에 쓰고 os.replace로 원자적 교체 → 부분쓰기/충돌 시 손상 방지
     """
-    tgt = get_voucher_data_path(workspace_name)
+    tgt = get_voucher_db_path(workspace_name)
     tgt.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile("w", delete=False, dir=tgt.parent, encoding="utf-8") as tmp:
         json.dump(data, tmp, ensure_ascii=False, indent=2)
@@ -32,6 +48,7 @@ class VoucherData:
         return self.data
 
     def set_data(self, data: dict) -> None:
+        pass
 
 # constant.py (추가)
 def load_workspace_config(workspace_name: str) -> dict:

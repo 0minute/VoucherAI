@@ -35,13 +35,17 @@ def test_get_uploaded_files():
     result = get_uploaded_files("test_workspace")
     print(result)
 
+
+
+
+
 if __name__ == "__main__":
 
-    # test_create_workspace()
+    test_create_workspace()
     # test_kill_workspace()
     # test_list_workspaces()
     # test_update_workspace()
     # test_rename_workspace()
     # test_upload_images()
     # test_upload_zip()
-    test_get_uploaded_files()
+    # test_get_uploaded_files()

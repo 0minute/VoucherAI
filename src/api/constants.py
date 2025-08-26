@@ -19,6 +19,7 @@ DB_FOLDER = "db"
 OCR_FOLDER = "ocr_results"
 LLM_FOLDER = "llm_results"
 JOURNAL_FOLDER = "journal_entries"
+VISUALIZATION_FOLDER = "visualization"
 
 # === Default file names ===
 SETTING_FILE = "setting.json"
@@ -29,6 +30,10 @@ EDITS_LOG_FILE = "edits.log.jsonl"  # 선택
 UPLOADS_INDEX_FILE = "uploads_index.json"
 WS_CONFIG_FILE = "config.json"
 # === Path Helpers ===
+
+def get_central_db_path() -> Path:
+    return DB_ROOT
+
 def get_workspace_path(workspace_name: str) -> Path:
     return WORKSPACE_ROOT / workspace_name
 
@@ -46,6 +51,9 @@ def get_ocr_path(workspace_name: str) -> Path:
 
 def get_llm_path(workspace_name: str) -> Path:
     return get_intermediate_path(workspace_name) / LLM_FOLDER
+
+def get_visualization_path(workspace_name: str) -> Path:
+    return get_intermediate_path(workspace_name) / VISUALIZATION_FOLDER
 
 def get_journal_path(workspace_name: str) -> Path:
     return get_intermediate_path(workspace_name) / JOURNAL_FOLDER
