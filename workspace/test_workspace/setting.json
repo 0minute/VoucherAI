@@ -1,0 +1,31 @@
+{
+  "workspace_name": "test_workspace",
+  "version": 8,
+  "created_at": "2025-08-26T06:33:49.049016Z",
+  "updated_at": "2025-08-26T06:38:34.860294Z",
+  "paths": {
+    "input_dir": "C:\\Users\\rekis\\Desktop\\Pythonworkspace\\voucherai\\workspace\\test_workspace\\input_files",
+    "intermediate_dir": "C:\\Users\\rekis\\Desktop\\Pythonworkspace\\voucherai\\workspace\\test_workspace\\intermediate",
+    "ocr_dir": "C:\\Users\\rekis\\Desktop\\Pythonworkspace\\voucherai\\workspace\\test_workspace\\intermediate\\ocr_results",
+    "llm_dir": "C:\\Users\\rekis\\Desktop\\Pythonworkspace\\voucherai\\workspace\\test_workspace\\intermediate\\llm_results",
+    "journal_dir": "C:\\Users\\rekis\\Desktop\\Pythonworkspace\\voucherai\\workspace\\test_workspace\\intermediate\\journal_entries",
+    "final_output_dir": "C:\\Users\\rekis\\Desktop\\Pythonworkspace\\voucherai\\workspace\\test_workspace\\final_output",
+    "logs_dir": "C:\\Users\\rekis\\Desktop\\Pythonworkspace\\voucherai\\workspace\\test_workspace\\logs"
+  },
+  "meta": {
+    "target_period": "2025-01-01 ~ 2025-01-31",
+    "line_count": 0
+  },
+  "files": {
+    "uploaded": [
+      "workspace\\test_workspace\\input_files\\HUNTRIX (1).png",
+      "workspace\\test_workspace\\input_files\\HUNTRIX.png",
+      "workspace\\test_workspace\\input_files\\R-1.png",
+      "workspace\\test_workspace\\input_files\\TI-1.png"
+    ],
+    "ocr_results": [],
+    "llm_results": [],
+    "journal_drafts": [],
+    "final_artifacts": []
+  }
+}
