@@ -331,4 +331,7 @@ def archive_journal_entry(workspace_name: str) -> None:
     json.dump(central_journal_entry_d, open(central_journal_path, "w", encoding="utf-8"), indent=4,  ensure_ascii=False)
     return {"ok": True, "data": json.dumps(central_journal_entry_d, ensure_ascii=False, indent=4), "error": None, "ts": _now_iso() }
 
+def get_project_list() -> list[str]:
+    from src.entjournal.constants import ALL_NAMES
+    return {"ok": True, "data" : ALL_NAMES, "error": None, "ts": _now_iso() }
 
