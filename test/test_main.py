@@ -5,11 +5,11 @@ from test.constants import (TEST_DIR,
                             TEST_LLM_CANDIDATES_PATH, TEST_LLM_SELECTIONS_PATH,
                             TEST_VISUALIZATION_DIR, TEST_VISUALIZATION_OUTPUT_PATH, TEST_VISUALIZATION_OUTPUT_DIR,
                             TEST_VISUALIZATION_DATA_PATH, TEST_VISUALIZATION_CANDIDATES_PATH, TEST_VISUALIZATION_SELECTIONS_PATH, TEST_VISUALIZATION_OCR_PATH,
-                            TEST_JOURANL_ENTRY_DIR, TEST_JOURANL_ENTRY_OUTPUT_DIR, TEST_JOURANL_ENTRY_INPUT_PATH, TEST_JOURANL_ENTRY_OUTPUT_PATH, TEST_JOURANL_ENTRY_OUTPUT_PATH_EXCEL)
+                            TEST_JOURANL_ENTRY_DIR, TEST_JOURANL_ENTRY_OUTPUT_DIR, TEST_JOURANL_ENTRY_INPUT_PATH, TEST_JOURANL_ENTRY_OUTPUT_PATH, TEST_JOURANL_ENTRY_OUTPUT_PATH_EXCEL, TEST_JOURANL_ENTRY_OUTPUT_PATH_SAP, TEST_JOURANL_ENTRY_OUTPUT_PATH_DZONE)
 from src.entocr.ocr_main import ocr_image_and_save_json_by_extension
 from src.ant.llm_main import extract_with_locations
 from src.ant.visualization import draw_overlays, export_thumbnails
-from src.entjournal.journal_main import make_journal_entry, get_json_wt_one_value_from_extract_invoice_fields, drop_source_id_from_json, make_journal_entry_to_record_list   
+from src.entjournal.journal_main import make_journal_entry, get_json_wt_one_value_from_extract_invoice_fields, drop_source_id_from_json, make_journal_entry_to_record_list, sap_view, dzone_view
 import json
 import os
 
@@ -45,7 +45,7 @@ def test_llm_parse():
     selections > candidates 중 llm이 채택한 내역(field, value, source_id, bbox) *source_id 기준으로 시각화와 연결
     """
     ocr_dict = json.load(open(TEST_LLM_INPUT_PATH, "r", encoding="utf-8"))
-    data, candidates, selections = extract_with_locations(ocr_dict)
+    data, candidates, selections = extract_with_locations(ocr_dict, "HUNTRIX")
     json.dump(data, open(TEST_LLM_DATA_PATH, "w", encoding="utf-8"), indent=4,  ensure_ascii=False)
     json.dump(candidates, open(TEST_LLM_CANDIDATES_PATH, "w", encoding="utf-8"), indent=4,  ensure_ascii=False)
     json.dump(selections, open(TEST_LLM_SELECTIONS_PATH, "w", encoding="utf-8"), indent=4,  ensure_ascii=False)
@@ -75,11 +75,17 @@ def test_create_journal_entry():
     data_dict = get_json_wt_one_value_from_extract_invoice_fields(data_dict)
     data_dict = [data_dict]
     data_dict = drop_source_id_from_json(data_dict)
-    result_dict = make_journal_entry(data_dict)
-    record_list = make_journal_entry_to_record_list(result_dict, TEST_JOURANL_ENTRY_INPUT_PATH)
+    record_list = make_journal_entry(data_dict)
+    # record_list = make_journal_entry_to_record_list(result_dict, TEST_JOURANL_ENTRY_INPUT_PATH)
+    sap_view_list = sap_view(record_list)
+    dzone_view_list = dzone_view(record_list)
+    pd.DataFrame(sap_view_list).to_excel(TEST_JOURANL_ENTRY_OUTPUT_PATH_EXCEL, index=False)
+    pd.DataFrame(dzone_view_list).to_excel(TEST_JOURANL_ENTRY_OUTPUT_PATH_EXCEL, index=False)
     pd.DataFrame(record_list).to_excel(TEST_JOURANL_ENTRY_OUTPUT_PATH_EXCEL, index=False)
-    json.dump(result_dict, open(TEST_JOURANL_ENTRY_OUTPUT_PATH, "w", encoding="utf-8"), indent=4,  ensure_ascii=False)
-    assert result_dict is not None
+    json.dump(record_list, open(TEST_JOURANL_ENTRY_OUTPUT_PATH, "w", encoding="utf-8"), indent=4,  ensure_ascii=False)
+    json.dump(sap_view_list, open(TEST_JOURANL_ENTRY_OUTPUT_PATH_SAP, "w", encoding="utf-8"), indent=4,  ensure_ascii=False)
+    json.dump(dzone_view_list, open(TEST_JOURANL_ENTRY_OUTPUT_PATH_DZONE, "w", encoding="utf-8"), indent=4,  ensure_ascii=False)
+    assert record_list is not None
     assert os.path.exists(TEST_JOURANL_ENTRY_OUTPUT_PATH)
     assert os.path.exists(TEST_JOURANL_ENTRY_OUTPUT_PATH_EXCEL)
 

@@ -11,6 +11,7 @@ GROUP_MEMBERS = {"HUNTRIX":["루미","미라","조이"]}
 ARTIST_NAMES = ["루미","미라","조이"]
 GROUP_NAMES = ["HUNTRIX"]
 ALL_NAMES = ARTIST_NAMES + GROUP_NAMES
+PROJECT_NAME_TO_CODE = {"HUNTRIX":"HUNTRIX001", "루미":"HUNTRIX002", "미라":"HUNTRIX003", "조이":"HUNTRIX004"}
     
 COLUMN_RULES_PATH = "data/column_rules.json"
 FIELD_SCHEMA_PATH = "data/field_schema.json"

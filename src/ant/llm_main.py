@@ -20,7 +20,17 @@ from src.ant.visualization import build_selections_for_viz, draw_overlays, expor
 from src.ant.load_llm import load_llm_model  # <- 당신 환경에 맞게 경로 조정
 # ──────────────────────────────────────────────────────────────────────────────
 # 2) 전처리 함수
-from src.ant.preprocessing import _find_date_candidates, _find_amount_candidates, _find_company_like, _find_bizno_candidates, _find_ceo_candidates, _find_address_candidates, build_candidates, add_account_name, add_artist_name, add_vendor_code
+from src.ant.preprocessing import (_find_date_candidates, 
+                                   _find_amount_candidates, 
+                                   _find_company_like, 
+                                   _find_bizno_candidates, 
+                                   _find_ceo_candidates, 
+                                   _find_address_candidates, 
+                                   build_candidates, 
+                                   add_account_name, 
+                                   add_artist_name, 
+                                   add_vendor_code,
+                                   add_file_id)
 # ──────────────────────────────────────────────────────────────────────────────
 # 3) LLM 컨텍스트 구성
 from src.ant.constants import SYSTEM_PROMPT, USER_HARD_PROMPT, CATEGORY, ACCOUNT_MAP, ACCOUNT_CODE_MAP, REQUIRED_FIELDS, RESULT_FIELDS, DOCUMENT_TYPE
@@ -272,6 +282,7 @@ def extract_with_locations(ocr_json, artist_name: str = None, model_name: str = 
     selections = build_selections_for_viz(data, candidates)
     add_artist_name(data,artist_name)
     add_vendor_code(data)
+    add_file_id(data, ocr_json.get("source_image"))
     return data, candidates, selections
 
 
