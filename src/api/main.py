@@ -30,32 +30,157 @@ from src.api.db import read_voucher_data, update_voucher_data
 import json
 import os
 
+from typing import Optional, List, Dict, Any
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field   
+from datetime import datetime, timezone
+
 #A. 워크스페이스
 # - 워크스페이스 생성
-def post_create_workspace(workspace_name: str, period_start: str, period_end: str) -> None:
-    ensure_workspace(workspace_name)
-    set_target_period(workspace_name, period_start, period_end)
-    return {"ok": True, "data": {"workspace_name": workspace_name, "period": f"{period_start} ~ {period_end}"}, "error": None, "ts": _now_iso() }
+# def post_create_workspace(workspace_name: str, period_start: str, period_end: str) -> None:
+#     ensure_workspace(workspace_name)
+#     set_target_period(workspace_name, period_start, period_end)
+#     return {"ok": True, "data": {"workspace_name": workspace_name, "period": f"{period_start} ~ {period_end}"}, "error": None, "ts": _now_iso() }
 
-# - 워크스페이스 삭제
-def post_kill_workspace(workspace_name: str) -> None:
-    delete_workspace(workspace_name, permanent=True)
-    return {"ok": True, "data": {"workspace_name": workspace_name}, "error": None, "ts": _now_iso() }
+# # - 워크스페이스 삭제
+# def post_kill_workspace(workspace_name: str) -> None:
+#     delete_workspace(workspace_name, permanent=True)
+#     return {"ok": True, "data": {"workspace_name": workspace_name}, "error": None, "ts": _now_iso() }
 
-# - 워크스페이스 목록 조회
-def get_list_workspaces() -> list[str]:
-    return {"ok": True, "data": {"workspaces": list_workspaces()}, "error": None, "ts": _now_iso() }
+# # - 워크스페이스 목록 조회
+# def get_list_workspaces() -> list[str]:
+#     return {"ok": True, "data": {"workspaces": list_workspaces()}, "error": None, "ts": _now_iso() }
 
-# - 워크스페이스 수정(대상 기간)
-def patch_update_workspace(workspace_name: str, period: str) -> None:
-    set_target_period(workspace_name, period)
-    return {"ok": True, "data": {"workspace_name": workspace_name, "period": period}, "error": None, "ts": _now_iso() }
+# # - 워크스페이스 수정(대상 기간)
+# def patch_update_workspace(workspace_name: str, period: str) -> None:
+#     set_target_period(workspace_name, period)
+#     return {"ok": True, "data": {"workspace_name": workspace_name, "period": period}, "error": None, "ts": _now_iso() }
 
-# - 워크스페이스 수정(이름 변경)
-def patch_rename_workspace(old_name: str, new_name: str, include_archived: bool = False) -> Path:
-    rename_workspace(old_name, new_name, include_archived)
-    return {"ok": True, "data": {"old_name": old_name, "new_name": new_name}, "error": None, "ts": _now_iso() }
+# # - 워크스페이스 수정(이름 변경)
+# def patch_rename_workspace(old_name: str, new_name: str, include_archived: bool = False) -> Path:
+#     rename_workspace(old_name, new_name, include_archived)
+#     return {"ok": True, "data": {"old_name": old_name, "new_name": new_name}, "error": None, "ts": _now_iso() }
 
+# ====== Pydantic 모델 (JS와 계약) ======
+class CreateWorkspaceBody(BaseModel):
+    workspaceName: str = Field(min_length=1)
+    periodStart: str = Field(description="YYYY-MM-DD")
+    periodEnd: str = Field(description="YYYY-MM-DD")
+
+class UpdatePeriodBody(BaseModel):
+    periodStart: str
+    periodEnd: str
+
+class RenameBody(BaseModel):
+    newName: str = Field(min_length=1)
+    includeArchived: Optional[bool] = False
+
+class ApiResponse(BaseModel):
+    ok: bool
+    data: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
+    ts: str
+
+# ====== FastAPI 앱 ======
+app = FastAPI(title="Workspace API", version="1.0.0")
+
+# 필요에 따라 Origin 제한하세요.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],        # TODO: 배포시 프런트 도메인으로 제한
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/ping")
+def ping():
+    return {"ok": True, "msg": "pong"}
+    
+# A-1. 워크스페이스 생성
+@app.post("/workspaces", response_model=ApiResponse, status_code=201)
+def create_workspace(body: CreateWorkspaceBody):
+    try:
+        ensure_workspace(body.workspaceName)
+        set_target_period(body.workspaceName, body.periodStart, body.periodEnd)
+        return ApiResponse(
+            ok=True,
+            data={
+                "workspaceName": body.workspaceName,
+                "period": {
+                    "periodStart": body.periodStart,
+                    "periodEnd": body.periodEnd
+                }
+            },
+            error=None,
+            ts=_now_iso()
+        )
+    except Exception as e:
+        # 필요하면 구체적 예외로 분기
+        raise HTTPException(status_code=400, detail=str(e))
+
+# A-2. 워크스페이스 삭제
+@app.delete("/workspaces/{workspaceName}", response_model=ApiResponse)
+def kill_workspace(workspaceName: str):
+    try:
+        delete_workspace(workspaceName, permanent=True)
+        return ApiResponse(
+            ok=True,
+            data={"workspaceName": workspaceName},
+            error=None,
+            ts=_now_iso()
+        )
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+# A-3. 워크스페이스 목록 조회
+@app.get("/workspaces", response_model=ApiResponse)
+def get_workspaces():
+    try:
+        return ApiResponse(
+            ok=True,
+            data={"workspaces": list_workspaces()},
+            error=None,
+            ts=_now_iso()
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# A-4. 워크스페이스 기간 수정
+@app.patch("/workspaces/{workspaceName}/period", response_model=ApiResponse)
+def update_workspace_period(workspaceName: str, body: UpdatePeriodBody):
+    try:
+        set_target_period(workspaceName, body.periodStart, body.periodEnd)
+        return ApiResponse(
+            ok=True,
+            data={
+                "workspaceName": workspaceName,
+                "period": {
+                    "periodStart": body.periodStart,
+                    "periodEnd": body.periodEnd
+                }
+            },
+            error=None,
+            ts=_now_iso()
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+# A-5. 워크스페이스 이름 변경
+@app.patch("/workspaces/{oldName}", response_model=ApiResponse)
+def rename_workspace_api(oldName: str, body: RenameBody):
+    try:
+        rename_workspace(oldName, body.newName, body.includeArchived or False)
+        return ApiResponse(
+            ok=True,
+            data={"oldName": oldName, "newName": body.newName},
+            error=None,
+            ts=_now_iso()
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
 #B. 업로드
 # - 파일 업로드
 def post_upload_images_with_domain(

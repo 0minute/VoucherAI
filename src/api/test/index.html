@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8" />
+<title>Workspace API Tester (Debug)</title>
+<style>
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin:24px; background:#0b0c10; color:#e6edf3; }
+  .box { border:1px solid #2d333b; border-radius:12px; padding:16px; margin:12px 0; background:#161b22; }
+  input, button { padding:8px; border-radius:8px; border:1px solid #2d333b; background:#0d1117; color:#e6edf3; }
+  button { background:#1f6feb; cursor:pointer; }
+  pre { white-space:pre-wrap; background:#0d1117; border:1px solid #2d333b; padding:12px; border-radius:8px; }
+</style>
+
+<body>
+  <h1>Workspace API Tester (Debug)</h1>
+
+  <div class="box">
+    <label>API Base URL
+      <input id="baseUrl" type="text" value="http://localhost:8000">
+    </label>
+    <label style="margin-left:8px;">Base Path (prefix)
+      <input id="basePath" type="text" value=""> <!-- 예: /api -->
+    </label>
+    <button id="ping">Check /workspaces</button>
+  </div>
+
+  <div class="box">
+    <h2>Create (POST /workspaces)</h2>
+    <input id="create-name" placeholder="entocr-2025">
+    <input id="create-start" type="date">
+    <input id="create-end" type="date">
+    <button id="create-btn">Create</button>
+  </div>
+
+  <div class="box">
+    <h2>List (GET /workspaces)</h2>
+    <button id="list-btn">List</button>
+  </div>
+
+  <div class="box">
+    <h2>Update Period (PATCH /workspaces/{name}/period)</h2>
+    <input id="update-name" placeholder="entocr-2025">
+    <input id="update-start" type="date">
+    <input id="update-end" type="date">
+    <button id="update-btn">Update</button>
+  </div>
+
+  <div class="box">
+    <h2>Rename (PATCH /workspaces/{oldName})</h2>
+    <input id="rename-old" placeholder="entocr-2025">
+    <input id="rename-new" placeholder="entocr-q1">
+    <input id="rename-archived" placeholder="false (optional)">
+    <button id="rename-btn">Rename</button>
+  </div>
+
+  <div class="box">
+    <h2>Delete (DELETE /workspaces/{workspaceName})</h2>
+    <input id="delete-name" placeholder="entocr-q1">
+    <button id="delete-btn">Delete</button>
+  </div>
+
+  <div class="box">
+    <h2>Response / Logs</h2>
+    <pre id="out">Logs will appear here.</pre>
+  </div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const out = $("out");
+  const j = (v) => JSON.stringify(v, null, 2);
+
+  // 전역 에러 캡처 → 화면에 표시
+  window.addEventListener("error", (e) => {
+    log(`# window.error\n` + (e?.error?.stack || e.message || e));
+  });
+  window.addEventListener("unhandledrejection", (e) => {
+    log(`# unhandledrejection\n` + (e?.reason?.stack || e.reason || e));
+  });
+
+  function log(msg) {
+    console.log(msg);
+    out.textContent = (out.textContent + "\n" + msg).trim();
+  }
+
+  function apiPath(p) {
+    const base = $("baseUrl").value.replace(/\/+$/, "");
+    const prefix = $("basePath").value.replace(/\/+$/, "");
+    const path = (prefix ? prefix : "") + p;
+    return `${base}${path}`;
+  }
+
+  async function api(p, { method="GET", body } = {}) {
+    const url = apiPath(p);
+    const opts = { method, headers: { "Content-Type": "application/json" } };
+    if (body) opts.body = JSON.stringify(body);
+    log(`→ ${method} ${url}\n${body ? j(body) : ""}`);
+    const res = await fetch(url, opts);
+    const text = await res.text();
+    let payload;
+    try { payload = JSON.parse(text); } catch { payload = text; }
+    log(`← status=${res.status}, ok=${res.ok}\n${j(payload)}`);
+    return { status: res.status, ok: res.ok, json: payload };
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // 기본값 seed
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    $("create-name").value = "entocr-2025";
+    $("update-name").value = "entocr-2025";
+    $("rename-old").value = "entocr-2025";
+    $("rename-new").value = "entocr-q1";
+    $("delete-name").value = "entocr-q1";
+    $("create-start").value = `${yyyy}-01-01`;
+    $("create-end").value = `${yyyy}-03-31`;
+    $("update-start").value = `${yyyy}-01-01`;
+    $("update-end").value = `${yyyy}-03-31`;
+
+    $("ping").addEventListener("click", async () => {
+      try { await api("/workspaces"); } catch (e) { log(e?.stack || e); }
+    });
+
+    $("create-btn").addEventListener("click", async () => {
+      try {
+        await api("/workspaces", {
+          method: "POST",
+          body: {
+            workspaceName: $("create-name").value.trim(),
+            periodStart: $("create-start").value,
+            periodEnd: $("create-end").value,
+          },
+        });
+      } catch (e) { log(e?.stack || e); }
+    });
+
+    $("list-btn").addEventListener("click", async () => {
+      try { await api("/workspaces"); } catch (e) { log(e?.stack || e); }
+    });
+
+    $("update-btn").addEventListener("click", async () => {
+      try {
+        await api(`/workspaces/${encodeURIComponent($("update-name").value.trim())}/period`, {
+          method: "PATCH",
+          body: {
+            periodStart: $("update-start").value,
+            periodEnd: $("update-end").value,
+          },
+        });
+      } catch (e) { log(e?.stack || e); }
+    });
+
+    $("rename-btn").addEventListener("click", async () => {
+      try {
+        const includeArchivedRaw = $("rename-archived").value.trim();
+        const includeArchived = includeArchivedRaw === "" ? undefined : /^true$/i.test(includeArchivedRaw);
+        const body = { newName: $("rename-new").value.trim() };
+        if (includeArchived !== undefined) body.includeArchived = includeArchived;
+        await api(`/workspaces/${encodeURIComponent($("rename-old").value.trim())}`, {
+          method: "PATCH",
+          body,
+        });
+      } catch (e) { log(e?.stack || e); }
+    });
+
+    $("delete-btn").addEventListener("click", async () => {
+      try {
+        await api(`/workspaces/${encodeURIComponent($("delete-name").value.trim())}`, { method: "DELETE" });
+      } catch (e) { log(e?.stack || e); }
+    });
+  });
+})();
+</script>
+</body>
+</html>
