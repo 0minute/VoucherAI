@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voucher AI</title>
+    <link rel="stylesheet" href="common/common.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <!-- Left: Logo/Brand -->
+            <div class="nav-brand">
+                <a href="#" class="brand-link" onclick="return false;">
+                    <img src="common/pwclogofinal.png" alt="Voucher AI Logo" class="brand-logo">
+                    <span>Voucher AI</span>
+                </a>
+            </div>
+
+            <!-- Right: Menu Items -->
+            <div class="nav-menu">
+                <!-- 메인 페이지에서는 네비게이션 메뉴 숨김 -->
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <!-- Landing Page Content -->
+        <div class="landing-page">
+            <div class="landing-content">
+                <div class="hero-section">
+                    <h1>Voucher AI에 오신 것을 환영합니다</h1>
+                    <p>AI 기반 영수증/세금계산서 처리 및 자동 분개 생성 시스템</p>
+                    
+                    <div class="cta-buttons">
+                        <a href="dashboard/dashboard.html" class="btn-primary">
+                            로그인
+                        </a>
+                        <a href="dashboard/dashboard.html" class="btn-ghost">
+                            회원가입
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="features-section">
+                    <h2>주요 기능</h2>
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-eye"></i>
+                            </div>
+                            <h3>AI 이미지 인식</h3>
+                            <p>최신 AI 기술로 정확하게 문서 내용을 인식하고 추출합니다</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-calculator"></i>
+                            </div>
+                            <h3>자동 분개 생성</h3>
+                            <p>인식된 정보를 바탕으로 자동으로 회계전표를 생성합니다</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                            <h3>통합 대시보드</h3>
+                            <p>Workspace 기록과 기간별 분개를 한눈에 확인할 수 있는 대시보드를 제공합니다</p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="common/utils.js"></script>
+    <script>
+        // Logout 모달 기능
+        let logoutModal, logoutConfirm, logoutCancel;
+
+        // 모달 표시 함수
+        function showLogoutModal() {
+            logoutModal.style.display = 'flex';
+            logoutModal.setAttribute('aria-hidden', 'false');
+        }
+
+        // 모달 닫기 함수
+        function closeLogoutModal() {
+            logoutModal.style.display = 'none';
+            logoutModal.setAttribute('aria-hidden', 'true');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            logoutModal = document.getElementById('logout-modal');
+            logoutConfirm = document.getElementById('logout-confirm');
+            logoutCancel = document.getElementById('logout-cancel');
+
+            // 예 버튼 클릭 시
+            logoutConfirm.addEventListener('click', function() {
+                // 로그아웃 처리 (현재는 페이지 새로고침)
+                window.location.reload();
+                closeLogoutModal();
+            });
+
+            // 아니오 버튼 클릭 시
+            logoutCancel.addEventListener('click', function() {
+                closeLogoutModal();
+            });
+
+            // 모달 외부 클릭 시 닫기
+            logoutModal.addEventListener('click', function(e) {
+                if (e.target === logoutModal) {
+                    closeLogoutModal();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

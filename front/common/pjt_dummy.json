@@ -1,0 +1,12 @@
+[
+    { "code": "P001", "name": "루미 (HUNTRIX)", "startDate": "2020-01-01", "endDate": "2021-01-31", "status": "진행중" },
+    { "code": "P002", "name": "미라 (HUNTRIX)", "startDate": "2020-02-15", "endDate": "2021-03-15", "status": "완료" },
+    { "code": "P003", "name": "조이 (HUNTRIX)", "startDate": "2020-04-01", "endDate": "2021-04-30", "status": "진행중" },
+    { "code": "P004", "name": "진우 (SajaBoys)", "startDate": "2020-05-10", "endDate": "2021-06-10", "status": "계획" },
+    { "code": "P005", "name": "베이비 (SajaBoys)", "startDate": "2020-06-20", "endDate": "2021-07-20", "status": "완료" },
+    { "code": "P006", "name": "미스터리 (SajaBoys)", "startDate": "2020-08-01", "endDate": "2021-08-31", "status": "진행중" },
+    { "code": "P007", "name": "로맨스 (SajaBoys)", "startDate": "2020-09-15", "endDate": "2021-10-15", "status": "계획" },
+    { "code": "P008", "name": "애비 (SajaBoys)", "startDate": "2020-11-01", "endDate": "2021-11-30", "status": "완료" },
+    { "code": "P009", "name": "HUNTRIX 유닛 프로젝트", "startDate": "2020-03-01", "endDate": "2021-05-31", "status": "진행중" },
+    { "code": "P010", "name": "SajaBoys 유닛 프로젝트", "startDate": "2020-07-01", "endDate": "2021-09-30", "status": "완료" }
+  ]

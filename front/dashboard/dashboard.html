@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Voucher AI</title>
+    <link rel="stylesheet" href="../common/common.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <!-- Left: Logo/Brand -->
+            <div class="nav-brand">
+                <a href="#" class="brand-link" onclick="return false;">
+                    <img src="../common/pwclogofinal.png" alt="Voucher AI Logo" class="brand-logo">
+                    <span>Voucher AI</span>
+                </a>
+            </div>
+
+            <!-- Right: Menu Items -->
+            <div class="nav-menu">
+                <ul class="nav-list">
+                    <li class="nav-item">
+                        <a href="../dashboard/dashboard.html" class="nav-link active" data-testid="nav-dashboard">
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-testid="nav-settings" onclick="window.location.href='../settings/settings.html'; return false;">
+                            <span>Settings</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-testid="nav-logout" onclick="showLogoutModal(); return false;">
+                            <span>Log out</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Mobile Menu Toggle -->
+                <button class="mobile-toggle" aria-label="메뉴 열기">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <!-- Dashboard Page -->
+        <div id="dashboard" class="page active">
+            <!-- Left Sidebar for Dashboard -->
+            <aside class="sidebar dashboard-sidebar">
+                <nav class="sidebar-nav">
+                    <ul class="sidebar-menu">
+                        <li class="sidebar-item">
+                            <a href="#workspace-history" class="sidebar-link active" data-testid="sidebar-workspace-history">
+                                <span>Workspace 관리</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="#voucher-preview" class="sidebar-link" data-testid="sidebar-voucher-preview">
+                                <span>전표 미리보기</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                                            <!-- KPOP DEMON HUNTERS Logo -->
+                <div class="sidebar-footer">
+                    <img src="../common/kpop_demon_hunters_no_bg2.png" alt="KPOP DEMON HUNTERS Logo" class="kpop-logo" onerror="this.style.display='none'; this.parentNode.innerHTML='<div class=\'kpop-logo-text\'>KPOP DEMON HUNTERS</div>'">
+                </div>
+            </aside>
+
+            <!-- Main Dashboard Content -->
+            <div class="dashboard-main">
+                <!-- 1) 상단 섹션 — Workspace 기록 -->
+                <section id="workspace-history" class="dashboard-section">
+                    <header class="section-header">
+                        <div class="section-header-content">
+                            <div class="section-title">
+                                <h2 data-testid="dash-worklogs-title">Workspace 관리</h2>
+                                <p>최근 Workspace에 접속하여 증빙 및 분개를 수정할 수 있습니다</p>
+                            </div>
+                            <button class="btn-primary" id="create-workspace-btn">
+                                <i class="fas fa-plus"></i>
+                                Workspace 생성
+                            </button>
+                        </div>
+                    </header>
+
+                    <!-- 검색 및 컨트롤 바 -->
+                    <div class="workspace-controls">
+                        <div class="search-container">
+                            <div class="search-box">
+                                <i class="fas fa-search search-icon"></i>
+                                <input type="text" id="workspace-search" class="search-input" placeholder="Workspace 검색" />
+                            </div>
+                            <div class="expand-controls">
+                                <button id="expand-workspaces" class="btn-expand" data-testid="btn-expand">
+                                    <i class="fas fa-chevron-down"></i>
+                                    펼치기
+                                </button>
+                                <button id="collapse-workspaces" class="btn-collapse" data-testid="btn-collapse" style="display: none;">
+                                    <i class="fas fa-chevron-up"></i>
+                                    접기
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- 카드 그리드 -->
+                    <div class="workspace-grid" data-testid="workspace-grid" id="workspace-grid">
+                        <!-- Workspace 카드들이 동적으로 생성됩니다 -->
+                    </div>
+
+                    <!-- 빈 상태 -->
+                    <div class="empty-state workspace-empty" id="workspace-empty" style="display: none;">
+                        <h3>Workspace가 없습니다</h3>
+                        <p>새로운 Workspace를 생성하여 증빙 및 분개를 시작해보세요.</p>
+                    </div>
+                </section>
+
+                <!-- 2) 하단 섹션 — 전표 미리보기 -->
+                <section id="voucher-preview" class="dashboard-section">
+                    <header class="section-header">
+                        <h2 data-testid="dash-journal-title">전표 미리보기</h2>
+                        <p>선택된 작업기록의 분개 내역을 통합하여 확인할 수 있습니다</p>
+                    </header>
+
+                    <!-- 컨트롤 바 -->
+                    <div class="journal-controls-dash" data-testid="journal-controls" id="journal-controls" style="display: none;">
+                        <div class="selected-worklogs" id="selected-worklogs">
+                            <!-- 선택된 작업기록 뱃지들 -->
+                        </div>
+                        
+                        <div class="control-actions">
+                            <div class="dropdown">
+                                <button class="btn-ghost dropdown-toggle" data-testid="column-toggle">
+                                    컬럼 선택
+                                </button>
+                                <div class="dropdown-content" id="column-dropdown">
+                                    <label><input type="checkbox" value="date" checked> 발생일</label>
+                                    <label><input type="checkbox" value="customer" checked> 거래처</label>
+                                    <label><input type="checkbox" value="amount" checked> 금액</label>
+                                    <label><input type="checkbox" value="type" checked> 유형</label>
+                                    <label><input type="checkbox" value="account" checked> 계정과목</label>
+                                    <label><input type="checkbox" value="artist"> 아티스트</label>
+                                    <label><input type="checkbox" value="memo"> 메모</label>
+                                    <label><input type="checkbox" value="source" checked> 출처</label>
+                                </div>
+                            </div>
+                            
+                            <button class="btn-primary" data-testid="download-csv" id="download-csv">
+                                CSV 다운로드
+                            </button>
+                            <button class="btn-ghost" data-testid="download-excel" id="download-excel">
+                                Excel 다운로드
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 분개 테이블 -->
+                    <div class="journal-table-wrapper">
+                        <div class="table-container" id="journal-table-container" style="display: none;">
+                            <table class="data-table journal-agg-table" data-testid="journal-table-agg" id="journal-agg-table">
+                                <thead>
+                                    <tr>
+                                        <th data-column="date">발생일</th>
+                                        <th data-column="customer">거래처</th>
+                                        <th data-column="amount">금액</th>
+                                        <th data-column="type">유형</th>
+                                        <th data-column="account">계정과목</th>
+                                        <th data-column="artist" style="display: none;">아티스트</th>
+                                        <th data-column="memo" style="display: none;">메모</th>
+                                        <th data-column="source">출처</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="journal-agg-tbody">
+                                    <!-- 분개 데이터가 동적으로 생성됩니다 -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- 합계 요약 바 -->
+                        <div class="journal-summary" data-testid="journal-summary" id="journal-summary" style="display: none;">
+                            <div class="summary-item">
+                                <span class="label">총 건수:</span>
+                                <span class="value" id="total-count">0</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">총 금액:</span>
+                                <span class="value" id="total-amount">₩0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 검색/필터 바 -->
+                    <div class="dash-filters" data-testid="dash-filters">
+                        <div class="filter-group">
+                            <div class="search-box">
+                                <input type="text" id="worklog-search" placeholder="키워드 검색..." class="search-input" data-testid="worklog-search" />
+                            </div>
+                            
+                            <div class="date-range">
+                                <input type="date" id="date-from" class="date-input" data-testid="date-from" />
+                                <span class="date-separator">~</span>
+                                <input type="date" id="date-to" class="date-input" data-testid="date-to" />
+                            </div>
+                            
+                            <select id="sort-option" class="sort-select" data-testid="sort-option">
+                                <option value="latest">최신 순</option>
+                                <option value="oldest">오래된 순</option>
+                                <option value="highest">큰 금액 순</option>
+                                <option value="lowest">작은 금액 순</option>
+                            </select>
+                        </div>
+
+                        <div class="selection-info" id="selection-info" style="display: none;">
+                            <span class="selection-badge" data-testid="selection-badge">0개 선택됨</span>
+                        </div>
+                    </div>
+
+                    <!-- 분개 테이블 -->
+                    <div class="journal-table-wrapper">
+                        <div class="table-container" id="journal-table-container">
+                            <table class="journal-table" data-testid="journal-table" aria-label="분개 결과 목록">
+                                <thead>
+                                    <tr>
+                                        <th style="min-width:100px">날짜</th>
+                                        <th style="min-width:80px">번호</th>
+                                        <th style="min-width:100px">계정코드</th>
+                                        <th style="min-width:150px">계정과목</th>
+                                        <th style="min-width:120px">차변</th>
+                                        <th style="min-width:120px">대변</th>
+                                        <th style="min-width:250px">적요</th>
+                                        <th style="min-width:120px">거래처코드</th>
+                                        <th style="min-width:150px">거래처명</th>
+                                        <th style="min-width:120px">PJT</th>
+                                        <th style="min-width:120px">PJT7</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="journal-rows">
+                                    <!-- 더미 데이터가 동적으로 생성됩니다 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Workspace 생성 모달 -->
+    <div id="workspace-modal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="workspace-title">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <header class="modal-header">
+                <h2 id="workspace-title">새 Workspace 생성</h2>
+            </header>
+            
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="workspace-title-input">Workspace 제목</label>
+                    <input type="text" id="workspace-title-input" class="form-input" placeholder="Workspace 제목을 입력하세요" />
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button id="workspace-confirm" class="btn-primary">
+                    확인
+                </button>
+                <button id="workspace-cancel" class="btn-ghost">
+                    취소
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logout 확인 모달 -->
+    <div id="logout-modal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="logout-title">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <header class="modal-header">
+                <h2 id="logout-title">로그아웃</h2>
+            </header>
+            
+            <div class="modal-body">
+                <p>로그아웃하시겠습니까?</p>
+            </div>
+
+            <div class="modal-actions">
+                <button id="logout-confirm" class="btn-primary">
+                    예
+                </button>
+                <button id="logout-cancel" class="btn-ghost">
+                    아니오
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="../common/utils.js"></script>
+    <script src="dashboard.js"></script>
+    <script>
+        // Logout 모달 기능
+        let logoutModal, logoutConfirm, logoutCancel;
+
+        // 모달 표시 함수
+        function showLogoutModal() {
+            logoutModal.style.display = 'flex';
+            logoutModal.setAttribute('aria-hidden', 'false');
+        }
+
+        // 모달 닫기 함수
+        function closeLogoutModal() {
+            logoutModal.style.display = 'none';
+            logoutModal.setAttribute('aria-hidden', 'true');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            logoutModal = document.getElementById('logout-modal');
+            logoutConfirm = document.getElementById('logout-confirm');
+            logoutCancel = document.getElementById('logout-cancel');
+
+            // 예 버튼 클릭 시
+            logoutConfirm.addEventListener('click', function() {
+                // 로그아웃 처리 (메인 페이지로 이동)
+                window.location.href = '../index.html';
+                closeLogoutModal();
+            });
+
+            // 아니오 버튼 클릭 시
+            logoutCancel.addEventListener('click', function() {
+                closeLogoutModal();
+            });
+
+            // 모달 외부 클릭 시 닫기
+            logoutModal.addEventListener('click', function(e) {
+                if (e.target === logoutModal) {
+                    closeLogoutModal();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

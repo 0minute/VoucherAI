@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workspace - Voucher AI</title>
+    <link rel="stylesheet" href="../common/common.css">
+    <link rel="stylesheet" href="workspace.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <!-- Left: Logo/Brand -->
+            <div class="nav-brand">
+                <a href="#" class="brand-link" onclick="return false;">
+                    <img src="../common/pwclogofinal.png" alt="Voucher AI Logo" class="brand-logo">
+                    <span>Voucher AI</span>
+                </a>
+            </div>
+
+            <!-- Right: Menu Items -->
+            <div class="nav-menu">
+                <ul class="nav-list">
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-testid="nav-dashboard" onclick="window.location.href='../dashboard/dashboard.html'; return false;">
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-testid="nav-settings" onclick="window.location.href='../settings/settings.html'; return false;">
+                            <span>Settings</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-testid="nav-logout" onclick="showLogoutModal(); return false;">
+                            <span>Log out</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Mobile Menu Toggle -->
+                <button class="mobile-toggle" aria-label="메뉴 열기">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <!-- Workspace Page -->
+        <div id="workspace" class="page active">
+            <!-- Left Sidebar (only visible in workspace) -->
+            <aside class="sidebar workspace-sidebar">
+                <nav class="sidebar-nav">
+                    <ul class="sidebar-menu">
+                        <li class="sidebar-item">
+                            <a href="#upload-section" class="sidebar-link active" data-testid="sidebar-upload">
+                                <span>증빙 업로드</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="#journal-section" class="sidebar-link" data-testid="sidebar-journal">
+                                <span>분개 생성</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                                            <!-- KPOP DEMON HUNTERS Logo -->
+                <div class="sidebar-footer">
+                    <img src="../common/kpop_demon_hunters_no_bg2.png" alt="KPOP DEMON HUNTERS Logo" class="kpop-logo" onerror="this.style.display='none'; this.parentNode.innerHTML='<div class=\'kpop-logo-text\'>KPOP DEMON HUNTERS</div>'">
+                </div>
+            </aside>
+
+            <!-- 프로젝트명 수정 모달 -->
+            <div id="edit-project-modal" class="modal" aria-hidden="true">
+                <div class="modal-backdrop" onclick="closeEditProjectModal()"></div>
+                <div class="modal-content edit-project-modal-content">
+                    <div class="modal-header">
+                        <h2>프로젝트명 수정</h2>
+                        <button class="modal-close" onclick="closeEditProjectModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="new-project-name" class="form-label">새로운 프로젝트명</label>
+                            <input type="text" id="new-project-name" class="form-input" placeholder="프로젝트명을 입력하세요">
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn-ghost" onclick="closeEditProjectModal()">취소</button>
+                        <button class="btn-primary" onclick="confirmEditProject()">확인</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="workspace-content">
+                <!-- Workspace 제목 표시 영역 -->
+                <div class="workspace-title-display" id="workspace-title-display" style="display: none;">
+                    <div class="workspace-title-container">
+                        <h1 class="workspace-title-text" id="workspace-title-text"></h1>
+                        <div class="workspace-title-meta">
+                            <span class="workspace-created-date" id="workspace-created-date"></span>
+                            <button class="btn-edit-project" id="btn-edit-project">
+                                <i class="fas fa-edit"></i>
+                                Project명 수정
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <section id="workspace" data-testid="workspace">
+                    <header class="page-header">
+                        <h1>증빙 업로드</h1>
+                        <p>전표 자동 생성을 위해 영수증/세금계산서를 업로드해주세요</p>
+                    </header>
+
+                    <!-- 2열 레이아웃 컨테이너 -->
+                    <div class="workspace-layout">
+                        <!-- 좌측 영역: 업로드 박스 -->
+                        <div class="upload-panel" data-testid="upload-panel">
+                            <div class="upload-box" role="button" tabindex="0" aria-label="파일 업로드 영역" data-testid="upload-dropzone">
+                                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7,10 12,15 17,10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                <p class="upload-ment">이미지 파일을 업로드해주세요</p>
+                                <div class="upload-instructions">
+                                    <p>JPEG, PNG, PDF, ZIP 파일을 드래그하여 넣거나</p>
+                                    <p>파일 탐색기에서 찾아주세요.</p>
+                                </div>
+                                <input type="file" id="file-input" accept=".jpg,.jpeg,.png,.pdf" multiple hidden />
+                            </div>
+
+                            <div class="upload-actions">
+                                <button id="btn-upload-images" class="btn-primary" data-testid="btn-upload-images">
+                                    <i class="fas fa-image"></i>
+                                    개별 파일 업로드
+                                </button>
+                                <button id="btn-upload-zip" class="btn-ghost" data-testid="btn-upload-zip">
+                                    <i class="fas fa-file-archive"></i>
+                                    ZIP 파일 업로드
+                                </button>
+                                <input type="file" id="zip-input" accept=".zip" hidden data-testid="zip-input" />
+                            </div>
+                        </div>
+
+                        <!-- 우측 영역: 업로드 목록 테이블 -->
+                        <div class="table-panel" data-testid="table-panel">
+                            <section id="upload-table" data-testid="section-upload-table">
+                        <div class="table-container">
+                            <table class="data-table" data-testid="table-files" aria-label="업로드 파일 목록">
+                                <thead>
+                                    <tr>
+                                        <th style="width:50px">
+                                            <input type="checkbox" id="select-all" aria-label="전체 선택" data-testid="select-all" disabled />
+                                        </th>
+                                        <th style="width:60px">No.</th>
+                                        <th>파일명</th>
+                                        <th style="min-width:200px">프로젝트명</th>
+                                        <th style="width:80px">삭제</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="file-rows">
+                                    <!-- 빈 행들 -->
+                                    <tr class="empty-row">
+                                        <td><input type="checkbox" disabled /></td>
+                                        <td>-</td>
+                                        <td class="empty-cell"></td>
+                                        <td>
+                                            <select class="project-select" disabled>
+                                                <option>N/A</option>
+                                            </select>
+                                        </td>
+                                        <td class="delete-cell">
+                                            <svg class="delete-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M3 6H5H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <path d="M10 11V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <path d="M14 11V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>
+                                        </td>
+                                    </tr>
+
+                                    <tr class="empty-row">
+                                        <td><input type="checkbox" disabled /></td>
+                                        <td>-</td>
+                                        <td class="empty-cell"></td>
+                                        <td>
+                                            <select class="project-select" disabled>
+                                                <option>N/A</option>
+                                            </select>
+                                        </td>
+                                        <td class="delete-cell">
+                                            <svg class="delete-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M3 6H5H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <path d="M10 11V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <path d="M14 11V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>
+                                        </td>
+                                    </tr>
+
+                                    <tr class="empty-row">
+                                        <td><input type="checkbox" disabled /></td>
+                                        <td>-</td>
+                                        <td class="empty-cell"></td>
+                                        <td>
+                                            <select class="project-select" disabled>
+                                                <option>N/A</option>
+                                            </select>
+                                        </td>
+                                        <td class="delete-cell">
+                                            <svg class="delete-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M3 6H5H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <path d="M10 11V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <path d="M14 11V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="table-toolbar">
+                            <div class="table-stats">
+                                <span id="selected-count">0개 선택됨</span>
+                            </div>
+                            <button id="btn-bulk-project" class="btn-primary" disabled data-testid="btn-bulk-project">
+                                프로젝트명 일괄 수정
+                            </button>
+                        </div>
+                        
+
+
+                            </section>
+                        </div>
+                    </div>
+
+                    <!-- Journal Section -->
+                    <section id="journal-section" class="content-section">
+                        <div class="section-header">
+                            <h2> 분개 생성 </h2>
+                            <p>각 분개를 더블클릭하면 원본 정보를 수정할 수 있습니다 </p>
+                        </div>
+                        
+                        <!-- 분개 생성 버튼 -->
+                        <div class="journal-controls">
+                            <button id="btn-generate-journal" class="btn-primary" data-testid="btn-generate-journal">
+                                분개 생성
+                            </button>
+                            <button id="btn-confirm-journal" class="btn-ghost" data-testid="btn-confirm-journal">
+                                분개 확정
+                            </button>
+                        </div>
+
+                        <!-- 분개 결과 테이블 -->
+                        <div class="journal-table-container">
+                            <table class="journal-table" data-testid="journal-table" aria-label="분개 결과 목록">
+                                <thead>
+                                    <tr>
+                                        <th style="min-width:100px">날짜</th>
+                                        <th style="min-width:120px">거래처</th>
+                                        <th style="min-width:100px">금액</th>
+                                        <th style="min-width:80px">유형</th>
+                                        <th style="min-width:120px">사업자등록번호</th>
+                                        <th style="min-width:100px">대표자</th>
+                                        <th style="min-width:200px">주소</th>
+                                        <th style="min-width:100px">증빙유형</th>
+                                        <th style="min-width:120px">계정과목</th>
+                                        <th style="min-width:100px">계정코드</th>
+                                        <th style="min-width:120px">프로젝트명</th>
+                                        <th style="min-width:100px">거래처코드</th>
+                                        <th style="min-width:120px">거래처명</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="journal-rows">
+                                    <!-- 빈 행들 -->
+                                    <tr class="journal-empty-row">
+                                        <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+                                    </tr>
+                                    <tr class="journal-empty-row">
+                                        <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+                                    </tr>
+                                    <tr class="journal-empty-row">
+                                        <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </section>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- 프로젝트명 일괄 수정 모달 -->
+    <div id="modal-bulk-project" class="modal" aria-hidden="true" role="dialog" aria-labelledby="bulk-title" data-testid="modal-bulk-project">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <header class="modal-header">
+                <h2 id="bulk-title">프로젝트명 일괄 수정</h2>
+                <button class="modal-close" aria-label="닫기">×</button>
+            </header>
+            
+            <div class="modal-body">
+                <p>체크된 <span id="bulk-selected-count">0</span>개 항목의 프로젝트명을 아래에서 선택한 값으로 변경합니다.</p>
+
+                <div class="form-group">
+                    <label for="bulk-project-select" class="form-label">프로젝트 선택</label>
+                    <select id="bulk-project-select" data-testid="bulk-project-select" size="6" class="listbox">
+                        <!-- GET /projects 결과로 옵션 채움 -->
+                    </select>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button id="bulk-confirm" class="btn-primary" data-testid="bulk-confirm" disabled>확인</button>
+                <button id="bulk-cancel" class="btn-ghost" data-testid="bulk-cancel">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logout 확인 모달 -->
+    <div id="logout-modal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="logout-title">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <header class="modal-header">
+                <h2 id="logout-title">로그아웃</h2>
+            </header>
+            
+            <div class="modal-body">
+                <p>로그아웃하시겠습니까?</p>
+            </div>
+
+            <div class="modal-actions">
+                <button id="logout-confirm" class="btn-primary">
+                    예
+                </button>
+                <button id="logout-cancel" class="btn-ghost">
+                    아니오
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="../common/utils.js"></script>
+    <script src="workspace.js"></script>
+    <script>
+        // Workspace 제목 표시 기능
+        function displayWorkspaceTitle() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const title = urlParams.get('title');
+            
+            if (title) {
+                const titleDisplay = document.getElementById('workspace-title-display');
+                const titleText = document.getElementById('workspace-title-text');
+                const createdDate = document.getElementById('workspace-created-date');
+                
+                if (titleDisplay && titleText) {
+                    titleText.textContent = title;
+                    titleDisplay.style.display = 'block';
+                    
+                    // 생성일 자동 표시
+                    if (createdDate) {
+                        const now = new Date();
+                        const formattedDate = now.toLocaleDateString('ko-KR', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        });
+                        createdDate.textContent = `생성일: ${formattedDate}`;
+                    }
+                }
+            }
+        }
+        
+        // Project명 수정 모달 열기
+        function setupProjectEditButton() {
+            const editBtn = document.getElementById('btn-edit-project');
+            if (editBtn) {
+                editBtn.addEventListener('click', function() {
+                    const currentTitle = document.getElementById('workspace-title-text').textContent;
+                    const modal = document.getElementById('edit-project-modal');
+                    const input = document.getElementById('new-project-name');
+                    
+                    // 현재 제목을 입력 필드에 설정
+                    input.value = currentTitle;
+                    input.select(); // 텍스트 선택
+                    
+                    // 모달 표시
+                    modal.setAttribute('aria-hidden', 'false');
+                    
+                    // Enter 키 이벤트 리스너 추가
+                    input.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') {
+                            confirmEditProject();
+                        } else if (e.key === 'Escape') {
+                            closeEditProjectModal();
+                        }
+                    });
+                });
+            }
+        }
+        
+        // 프로젝트명 수정 모달 닫기
+        function closeEditProjectModal() {
+            const modal = document.getElementById('edit-project-modal');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+        
+        // 프로젝트명 수정 확인
+        function confirmEditProject() {
+            const input = document.getElementById('new-project-name');
+            const newTitle = input.value.trim();
+            const currentTitle = document.getElementById('workspace-title-text').textContent;
+            
+            if (newTitle && newTitle !== currentTitle) {
+                // 제목 업데이트
+                document.getElementById('workspace-title-text').textContent = newTitle;
+                
+                // URL 업데이트
+                const url = new URL(window.location);
+                url.searchParams.set('title', encodeURIComponent(newTitle));
+                window.history.replaceState({}, '', url);
+                
+                // 모달 닫기
+                closeEditProjectModal();
+                
+            } else if (!newTitle) {
+                // 빈 값인 경우 경고
+                input.focus();
+                input.style.borderColor = '#e74c3c';
+                setTimeout(() => {
+                    input.style.borderColor = '';
+                }, 2000);
+            }
+        }
+        
+
+        
+        // Logout 모달 기능
+        let logoutModal, logoutConfirm, logoutCancel;
+
+        // 모달 표시 함수
+        function showLogoutModal() {
+            logoutModal.style.display = 'flex';
+            logoutModal.setAttribute('aria-hidden', 'false');
+        }
+
+        // 모달 닫기 함수
+        function closeLogoutModal() {
+            logoutModal.style.display = 'none';
+            logoutModal.setAttribute('aria-hidden', 'true');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Workspace 제목 표시
+            displayWorkspaceTitle();
+            
+            // Project명 수정 버튼 설정
+            setupProjectEditButton();
+            
+            logoutModal = document.getElementById('logout-modal');
+            logoutConfirm = document.getElementById('logout-confirm');
+            logoutCancel = document.getElementById('logout-cancel');
+
+            // 예 버튼 클릭 시
+            logoutConfirm.addEventListener('click', function() {
+                // 로그아웃 처리 (메인 페이지로 이동)
+                window.location.href = '../index.html';
+                closeLogoutModal();
+            });
+
+            // 아니오 버튼 클릭 시
+            logoutCancel.addEventListener('click', function() {
+                closeLogoutModal();
+            });
+
+            // 모달 외부 클릭 시 닫기
+            logoutModal.addEventListener('click', function(e) {
+                if (e.target === logoutModal) {
+                    closeLogoutModal();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

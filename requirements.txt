@@ -13,6 +13,11 @@ pdf2image>=1.16.0
 streamlit>=1.32.0
 pillow>=10.0.0
 pandas>=2.0.0
+# 의존성 추가
+langchain>=0.1.0
+langchain-openai>=0.1.0
+langchain-core>=0.1.0
+openpyxl>=3.1.0
 
 # Development dependencies (install with: pip install -r requirements-dev.txt)
 # pytest>=7.0.0
