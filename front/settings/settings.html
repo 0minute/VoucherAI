@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Voucher AI</title>
+    <link rel="stylesheet" href="../common/common.css">
+    <link rel="stylesheet" href="settings.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <!-- Left: Logo/Brand -->
+            <div class="nav-brand">
+                <a href="#" class="brand-link" onclick="return false;">
+                    <img src="../common/pwclogofinal.png" alt="Voucher AI Logo" class="brand-logo">
+                    <span>Voucher AI</span>
+                </a>
+            </div>
+
+            <!-- Right: Menu Items -->
+            <div class="nav-menu">
+                <ul class="nav-list">
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-testid="nav-dashboard" onclick="window.location.href='../dashboard/dashboard.html'; return false;">
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="../settings/settings.html" class="nav-link active" data-testid="nav-settings">
+                            <span>Settings</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-testid="nav-logout" onclick="showLogoutModal(); return false;">
+                            <span>Log out</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Mobile Menu Toggle -->
+                <button class="mobile-toggle" aria-label="메뉴 열기">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <!-- Settings Page -->
+        <div id="settings" class="page active">
+            <!-- Left Sidebar (only visible in settings) -->
+            <aside class="sidebar settings-sidebar">
+                <nav class="sidebar-nav">
+                    <ul class="sidebar-menu">
+                        <li class="sidebar-item">
+                            <a href="#coa-section" class="sidebar-link active" data-testid="sidebar-coa">
+                                <span>CoA 관리</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="#project-section" class="sidebar-link" data-testid="sidebar-project">
+                                <span>프로젝트명 관리</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="#transaction-section" class="sidebar-link" data-testid="sidebar-transaction">
+                                <span>거래유형 관리</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                <!-- KPOP DEMON HUNTERS Logo -->
+                <div class="sidebar-footer">
+                    <img src="../common/kpop_demon_hunters_no_bg2.png" alt="KPOP DEMON HUNTERS Logo" class="kpop-logo" onerror="this.style.display='none'; this.parentNode.innerHTML='<div class=\'kpop-logo-text\'>KPOP DEMON HUNTERS</div>'">
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <div class="settings-content">
+                <!-- CoA 관리 섹션 -->
+                <section id="coa-section" class="content-section">
+                    <header class="page-header">
+                        <h1>CoA 관리</h1>
+                        <p>계정과목(Chart of Accounts)을 관리할 수 있습니다</p>
+                    </header>
+
+                    <!-- 컨트롤 바 -->
+                    <div class="table-controls">
+                        <div class="control-actions">
+                            <button id="btn-upload-coa" class="btn-primary" data-testid="btn-upload-coa">
+                                <i class="fas fa-upload"></i>
+                                Excel 업로드
+                            </button>
+                            <button id="btn-download-coa" class="btn-ghost" data-testid="btn-download-coa">
+                                <i class="fas fa-download"></i>
+                                Excel 다운로드
+                            </button>
+                        </div>
+                        <input type="file" id="coa-file-input" accept=".xlsx,.xls" hidden data-testid="coa-file-input" />
+                    </div>
+
+                    <!-- CoA 테이블 -->
+                    <div class="table-container">
+                        <table class="data-table" data-testid="coa-table" aria-label="CoA 목록">
+                            <thead>
+                                <tr>
+                                    <th>계정코드</th>
+                                    <th>계정명</th>
+                                    <th>업로드일</th>
+                                    <th>수정</th>
+                                    <th>삭제</th>
+                                </tr>
+                             </thead>
+                            <tbody id="coa-rows">
+                                <!-- COA 데이터는 JavaScript로 동적 생성됩니다 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 프로젝트명 관리 섹션 -->
+                <section id="project-section" class="content-section">
+                    <header class="page-header">
+                        <h1>프로젝트명 관리</h1>
+                        <p>프로젝트명을 관리할 수 있습니다</p>
+                    </header>
+
+                    <!-- 컨트롤 바 -->
+                    <div class="table-controls">
+                        <div class="control-actions">
+                            <button id="btn-upload-project" class="btn-primary" data-testid="btn-upload-project">
+                                <i class="fas fa-upload"></i>
+                                Excel 업로드
+                            </button>
+                            <button id="btn-download-project" class="btn-ghost" data-testid="btn-download-project">
+                                <i class="fas fa-download"></i>
+                                Excel 다운로드
+                            </button>
+                        </div>
+                        <input type="file" id="project-file-input" accept=".xlsx,.xls" hidden data-testid="project-file-input" />
+                    </div>
+
+                    <!-- 프로젝트 테이블 -->
+                    <div class="table-container">
+                        <table class="data-table" data-testid="project-table" aria-label="프로젝트 목록">
+                                                         <thead>
+                                 <tr>
+                                     <th>프로젝트코드</th>
+                                     <th>프로젝트명</th>
+                                     <th>시작일</th>
+                                     <th>종료일</th>
+                                     <th>현황</th>
+                                     <th>수정</th>
+                                     <th>삭제</th>
+                                 </tr>
+                             </thead>
+                            <tbody id="project-rows">
+                                <!-- 빈 행들 -->
+                                <tr class="empty-row">
+                                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+                                </tr>
+                                <tr class="empty-row">
+                                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+                                </tr>
+                                <tr class="empty-row">
+                                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 거래유형 관리 섹션 -->
+                <section id="transaction-section" class="content-section">
+                    <header class="page-header">
+                        <h1>거래유형 관리</h1>
+                        <p>거래유형을 관리할 수 있습니다</p>
+                    </header>
+
+                    <!-- 컨트롤 바 -->
+                    <div class="table-controls">
+                        <div class="control-actions">
+                            <button id="btn-upload-transaction" class="btn-primary" data-testid="btn-upload-transaction">
+                                <i class="fas fa-upload"></i>
+                                Excel 업로드
+                            </button>
+                            <button id="btn-download-transaction" class="btn-ghost" data-testid="btn-download-transaction">
+                                <i class="fas fa-download"></i>
+                                Excel 다운로드
+                            </button>
+                        </div>
+                        <input type="file" id="transaction-file-input" accept=".xlsx,.xls" hidden data-testid="transaction-file-input" />
+                    </div>
+
+                    <!-- 거래유형 테이블 -->
+                    <div class="table-container">
+                        <table class="data-table" data-testid="transaction-table" aria-label="거래유형 목록">
+                                                         <thead>
+                                 <tr>
+                                     <th>거래코드</th>
+                                     <th>거래유형명</th>
+                                     <th>거래구분</th>
+                                     <th>사용여부</th>
+                                     <th>수정</th>
+                                     <th>삭제</th>
+                                 </tr>
+                             </thead>
+                            <tbody id="transaction-rows">
+                                <!-- 빈 행들 -->
+                                <tr class="empty-row">
+                                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+                                </tr>
+                                <tr class="empty-row">
+                                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+                                </tr>
+                                <tr class="empty-row">
+                                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Logout 확인 모달 -->
+    <div id="logout-modal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="logout-title">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <header class="modal-header">
+                <h2 id="logout-title">로그아웃</h2>
+            </header>
+            
+            <div class="modal-body">
+                <p>로그아웃하시겠습니까?</p>
+            </div>
+
+            <div class="modal-actions">
+                <button id="logout-confirm" class="btn-primary">
+                    예
+                </button>
+                <button id="logout-cancel" class="btn-ghost">
+                    아니오
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="../common/utils.js"></script>
+    <script src="settings.js"></script>
+    <script>
+        // Logout 모달 기능
+        let logoutModal, logoutConfirm, logoutCancel;
+
+        // 모달 표시 함수
+        function showLogoutModal() {
+            logoutModal.style.display = 'flex';
+            logoutModal.setAttribute('aria-hidden', 'false');
+        }
+
+        // 모달 닫기 함수
+        function closeLogoutModal() {
+            logoutModal.style.display = 'none';
+            logoutModal.setAttribute('aria-hidden', 'true');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            logoutModal = document.getElementById('logout-modal');
+            logoutConfirm = document.getElementById('logout-confirm');
+            logoutCancel = document.getElementById('logout-cancel');
+
+            // 예 버튼 클릭 시
+            logoutConfirm.addEventListener('click', function() {
+                // 로그아웃 처리 (메인 페이지로 이동)
+                window.location.href = '../index.html';
+                closeLogoutModal();
+            });
+
+            // 아니오 버튼 클릭 시
+            logoutCancel.addEventListener('click', function() {
+                closeLogoutModal();
+            });
+
+            // 모달 외부 클릭 시 닫기
+            logoutModal.addEventListener('click', function(e) {
+                if (e.target === logoutModal) {
+                    closeLogoutModal();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

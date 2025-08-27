@@ -15,6 +15,7 @@
             <!-- Left: Logo/Brand -->
             <div class="nav-brand">
                 <a href="#" class="brand-link" onclick="return false;">
+                    <img src="../common/pwclogofinal.png" alt="Voucher AI Logo" class="brand-logo">
                     <span>Voucher AI</span>
                 </a>
             </div>
@@ -27,9 +28,10 @@
                             <span>Dashboard</span>
                         </a>
                     </li>
+
                     <li class="nav-item">
-                        <a href="#" class="nav-link" data-testid="nav-workspace" onclick="window.location.href='../workspace/workspace.html'; return false;">
-                            <span>Workspace</span>
+                        <a href="#" class="nav-link" data-testid="nav-settings" onclick="window.location.href='../settings/settings.html'; return false;">
+                            <span>Settings</span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -57,7 +59,7 @@
                     <ul class="sidebar-menu">
                         <li class="sidebar-item">
                             <a href="#workspace-history" class="sidebar-link active" data-testid="sidebar-workspace-history">
-                                <span>Workspace 기록</span>
+                                <span>Workspace 관리</span>
                             </a>
                         </li>
                         <li class="sidebar-item">
@@ -67,9 +69,9 @@
                         </li>
                     </ul>
                 </nav>
-                <!-- PwC Logo -->
+                                            <!-- KPOP DEMON HUNTERS Logo -->
                 <div class="sidebar-footer">
-                    <img src="../@pwc오버레이로고.png" alt="PwC Logo" class="pwc-logo" onerror="this.style.display='none'; this.parentNode.innerHTML='<div class=\'pwc-logo-text\'>PwC</div>'">
+                    <img src="../common/kpop_demon_hunters_no_bg2.png" alt="KPOP DEMON HUNTERS Logo" class="kpop-logo" onerror="this.style.display='none'; this.parentNode.innerHTML='<div class=\'kpop-logo-text\'>KPOP DEMON HUNTERS</div>'">
                 </div>
             </aside>
 
@@ -78,44 +80,48 @@
                 <!-- 1) 상단 섹션 — Workspace 기록 -->
                 <section id="workspace-history" class="dashboard-section">
                     <header class="section-header">
-                        <h2 data-testid="dash-worklogs-title">Workspace 기록</h2>
-                        <p>주/월 단위로 저장된 작업기록을 확인하고 전표를 미리보기할 수 있습니다</p>
+                        <div class="section-header-content">
+                            <div class="section-title">
+                                <h2 data-testid="dash-worklogs-title">Workspace 관리</h2>
+                                <p>최근 Workspace에 접속하여 증빙 및 분개를 수정할 수 있습니다</p>
+                            </div>
+                            <button class="btn-primary" id="create-workspace-btn">
+                                <i class="fas fa-plus"></i>
+                                Workspace 생성
+                            </button>
+                        </div>
                     </header>
 
-                    <!-- 검색/필터 바 -->
-                    <div class="dash-filters" data-testid="dash-filters">
-                        <div class="filter-group">
+                    <!-- 검색 및 컨트롤 바 -->
+                    <div class="workspace-controls">
+                        <div class="search-container">
                             <div class="search-box">
-                                <input type="text" id="worklog-search" placeholder="키워드 검색..." class="search-input" data-testid="worklog-search" />
+                                <i class="fas fa-search search-icon"></i>
+                                <input type="text" id="workspace-search" class="search-input" placeholder="Workspace 검색" />
                             </div>
-                            
-                            <div class="date-range">
-                                <input type="date" id="date-from" class="date-input" data-testid="date-from" />
-                                <span class="date-separator">~</span>
-                                <input type="date" id="date-to" class="date-input" data-testid="date-to" />
+                            <div class="expand-controls">
+                                <button id="expand-workspaces" class="btn-expand" data-testid="btn-expand">
+                                    <i class="fas fa-chevron-down"></i>
+                                    펼치기
+                                </button>
+                                <button id="collapse-workspaces" class="btn-collapse" data-testid="btn-collapse" style="display: none;">
+                                    <i class="fas fa-chevron-up"></i>
+                                    접기
+                                </button>
                             </div>
-                            
-                            <select id="sort-option" class="sort-select" data-testid="sort-option">
-                                <option value="recent">최근순</option>
-                                <option value="uploads">업로드수</option>
-                                <option value="journals">분개수</option>
-                            </select>
                         </div>
 
-                        <div class="selection-info" id="selection-info" style="display: none;">
-                            <span class="selection-badge" data-testid="selection-badge">0개 선택됨</span>
-                        </div>
                     </div>
 
                     <!-- 카드 그리드 -->
-                    <div class="worklog-grid" data-testid="worklog-grid" id="worklog-grid">
-                        <!-- 카드들이 동적으로 생성됩니다 -->
+                    <div class="workspace-grid" data-testid="workspace-grid" id="workspace-grid">
+                        <!-- Workspace 카드들이 동적으로 생성됩니다 -->
                     </div>
 
                     <!-- 빈 상태 -->
-                    <div class="empty-state worklog-empty" id="worklog-empty" style="display: none;">
-                        <h3>작업 기록이 없습니다</h3>
-                        <p>Workspace에서 파일을 업로드하고 분개를 생성해보세요.</p>
+                    <div class="empty-state workspace-empty" id="workspace-empty" style="display: none;">
+                        <h3>Workspace가 없습니다</h3>
+                        <p>새로운 Workspace를 생성하여 증빙 및 분개를 시작해보세요.</p>
                     </div>
                 </section>
 
@@ -193,15 +199,87 @@
                         </div>
                     </div>
 
-                    <!-- 빈 상태 -->
-                    <div class="empty-state journal-empty" id="journal-empty">
-                        <h3>작업기록을 선택해주세요</h3>
-                        <p>상단에서 작업기록을 선택하면 전표가 미리보기로 표시됩니다.</p>
+                    <!-- 검색/필터 바 -->
+                    <div class="dash-filters" data-testid="dash-filters">
+                        <div class="filter-group">
+                            <div class="search-box">
+                                <input type="text" id="worklog-search" placeholder="키워드 검색..." class="search-input" data-testid="worklog-search" />
+                            </div>
+                            
+                            <div class="date-range">
+                                <input type="date" id="date-from" class="date-input" data-testid="date-from" />
+                                <span class="date-separator">~</span>
+                                <input type="date" id="date-to" class="date-input" data-testid="date-to" />
+                            </div>
+                            
+                            <select id="sort-option" class="sort-select" data-testid="sort-option">
+                                <option value="latest">최신 순</option>
+                                <option value="oldest">오래된 순</option>
+                                <option value="highest">큰 금액 순</option>
+                                <option value="lowest">작은 금액 순</option>
+                            </select>
+                        </div>
+
+                        <div class="selection-info" id="selection-info" style="display: none;">
+                            <span class="selection-badge" data-testid="selection-badge">0개 선택됨</span>
+                        </div>
+                    </div>
+
+                    <!-- 분개 테이블 -->
+                    <div class="journal-table-wrapper">
+                        <div class="table-container" id="journal-table-container">
+                            <table class="journal-table" data-testid="journal-table" aria-label="분개 결과 목록">
+                                <thead>
+                                    <tr>
+                                        <th style="min-width:100px">날짜</th>
+                                        <th style="min-width:80px">번호</th>
+                                        <th style="min-width:100px">계정코드</th>
+                                        <th style="min-width:150px">계정과목</th>
+                                        <th style="min-width:120px">차변</th>
+                                        <th style="min-width:120px">대변</th>
+                                        <th style="min-width:250px">적요</th>
+                                        <th style="min-width:120px">거래처코드</th>
+                                        <th style="min-width:150px">거래처명</th>
+                                        <th style="min-width:120px">PJT</th>
+                                        <th style="min-width:120px">PJT7</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="journal-rows">
+                                    <!-- 더미 데이터가 동적으로 생성됩니다 -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
             </div>
         </div>
     </main>
+
+    <!-- Workspace 생성 모달 -->
+    <div id="workspace-modal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="workspace-title">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <header class="modal-header">
+                <h2 id="workspace-title">새 Workspace 생성</h2>
+            </header>
+            
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="workspace-title-input">Workspace 제목</label>
+                    <input type="text" id="workspace-title-input" class="form-input" placeholder="Workspace 제목을 입력하세요" />
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button id="workspace-confirm" class="btn-primary">
+                    확인
+                </button>
+                <button id="workspace-cancel" class="btn-ghost">
+                    취소
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Logout 확인 모달 -->
     <div id="logout-modal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="logout-title">

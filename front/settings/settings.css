@@ -1,0 +1,405 @@
+/* ================================================== */
+/* Settings 전용 스타일 */
+/* ================================================== */
+
+/* 페이지 레이아웃 */
+.page.active {
+  display: block !important;
+}
+
+/* settings-content 스타일은 common.css에서 관리 */
+
+/* Settings Sidebar - Workspace와 동일한 스타일 */
+.settings-sidebar {
+  width: var(--sidebar-width);
+  background: var(--gradient-card);
+  border-right: 1px solid var(--border);
+  padding: 1rem 0;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 60px;
+  overflow-y: auto;
+}
+
+.settings-sidebar .sidebar-nav {
+  height: 100%;
+}
+
+.settings-sidebar .sidebar-menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.settings-sidebar .sidebar-item {
+  margin-bottom: 0.5rem;
+}
+
+.settings-sidebar .sidebar-link {
+  display: flex;
+  align-items: center;
+  padding: 1rem 2rem;
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 500;
+  transition: var(--transition);
+  border-left: 3px solid transparent;
+}
+
+.settings-sidebar .sidebar-link:hover {
+  background: rgba(177, 156, 217, 0.1);
+  color: var(--text-dark);
+}
+
+.settings-sidebar .sidebar-link.active {
+  background: linear-gradient(135deg, #C5D1E0 0%, #D5C9E8 50%, #E5D5D5 100%);
+  color: var(--text-dark);
+  border-left-color: var(--primary-mauve);
+  font-weight: 600;
+}
+
+.settings-sidebar .sidebar-footer {
+  position: fixed;
+  bottom: 2rem;
+  left: 1rem;
+  width: calc(var(--sidebar-width) - 2rem);
+  text-align: center;
+  z-index: 950;
+}
+
+/* Settings Content */
+.settings-content {
+  margin-left: var(--sidebar-width);
+  padding: 2rem;
+  min-height: calc(100vh - 60px);
+}
+
+.content-section {
+  display: block;
+  margin-bottom: 4rem;
+  scroll-margin-top: 80px; /* 스크롤 시 상단 여백 */
+}
+
+.page-header {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  text-align: left;
+  margin-bottom: 2rem;
+}
+
+.page-header h1 {
+  color: var(--text-dark);
+  margin-bottom: 0.5rem;
+  font-size: 2rem;
+}
+
+.page-header p {
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+/* Table Controls */
+.table-controls {
+  max-width: 1200px;
+  margin: 0 auto 1.5rem auto;
+  padding: 1rem;
+  background: var(--gradient-card);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.control-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.control-actions button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-primary {
+  background: var(--gradient-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-subtle);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.btn-ghost:hover {
+  background: var(--light-gray);
+  color: var(--text);
+  border-color: var(--primary-mauve);
+}
+
+/* Table Container */
+.table-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: auto;
+  max-height: 400px; /* 테이블 높이 제한 */
+  border: 1px solid var(--border-light);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  background: white;
+  table-layout: fixed;
+}
+
+/* 모든 테이블 열 너비를 균등하게 설정 */
+.data-table th,
+.data-table td {
+  width: auto;
+  min-width: 0;
+}
+
+/* CoA 테이블 (5열) */
+#coa-table th:nth-child(1),
+#coa-table td:nth-child(1) { width: 18%; } /* 계정코드 */
+#coa-table th:nth-child(2),
+#coa-table td:nth-child(2) { width: 35%; } /* 계정명 */
+#coa-table th:nth-child(3),
+#coa-table td:nth-child(3) { width: 20%; } /* 업로드일 */
+#coa-table th:nth-child(4),
+#coa-table td:nth-child(4) { width: 12%; } /* 수정 */
+#coa-table th:nth-child(5),
+#coa-table td:nth-child(5) { width: 15%; } /* 삭제 */
+
+/* 프로젝트 테이블 (7열) */
+#project-table th:nth-child(1),
+#project-table td:nth-child(1) { width: 12%; } /* 프로젝트코드 */
+#project-table th:nth-child(2),
+#project-table td:nth-child(2) { width: 25%; } /* 프로젝트명 */
+#project-table th:nth-child(3),
+#project-table td:nth-child(3) { width: 12%; } /* 시작일 */
+#project-table th:nth-child(4),
+#project-table td:nth-child(4) { width: 12%; } /* 종료일 */
+#project-table th:nth-child(5),
+#project-table td:nth-child(5) { width: 12%; } /* 현황 */
+#project-table th:nth-child(6),
+#project-table td:nth-child(6) { width: 12%; } /* 수정 */
+#project-table th:nth-child(7),
+#project-table td:nth-child(7) { width: 15%; } /* 삭제 */
+
+/* 거래유형 테이블 (6열) */
+#transaction-table th:nth-child(1),
+#transaction-table td:nth-child(1) { width: 15%; } /* 거래코드 */
+#transaction-table th:nth-child(2),
+#transaction-table td:nth-child(2) { width: 30%; } /* 거래유형명 */
+#transaction-table th:nth-child(3),
+#transaction-table td:nth-child(3) { width: 20%; } /* 거래구분 */
+#transaction-table th:nth-child(4),
+#transaction-table td:nth-child(4) { width: 15%; } /* 사용여부 */
+#transaction-table th:nth-child(5),
+#transaction-table td:nth-child(5) { width: 10%; } /* 수정 */
+#transaction-table th:nth-child(6),
+#transaction-table td:nth-child(6) { width: 10%; } /* 삭제 */
+
+.data-table thead {
+  background: var(--gradient-header);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.data-table th {
+  padding: 1rem 0.75rem;
+  text-align: left;
+  border-bottom: 2px solid var(--border);
+  font-weight: 600;
+  color: var(--text-dark);
+  background: var(--gradient-header);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.data-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.data-table tbody tr:hover:not(.empty-row) {
+  background: rgba(177, 156, 217, 0.05);
+}
+
+.data-table tbody tr:nth-child(even) {
+  background: rgba(250, 250, 250, 0.5);
+}
+
+/* 빈 행 스타일 */
+.data-table .empty-row td {
+  color: var(--text-muted);
+  font-style: italic;
+  opacity: 0.5;
+  text-align: center;
+}
+
+/* 수정/삭제 아이콘 - COA 테이블과 동일한 스타일 */
+.btn-edit,
+.btn-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: transparent;
+}
+
+.btn-edit {
+  color: var(--primary-mauve);
+  border: 1px solid var(--primary-mauve);
+}
+
+.btn-edit:hover {
+  background: var(--primary-mauve);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(177, 156, 217, 0.3);
+}
+
+.btn-delete {
+  color: #e74c3c;
+  border: 1px solid #e74c3c;
+}
+
+.btn-delete:hover {
+  background: #e74c3c;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+}
+
+.btn-edit svg,
+.btn-delete svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* 스크롤바 스타일링 */
+.table-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: var(--primary-mauve);
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-mauve-dark);
+}
+
+/* ================================================== */
+/* 반응형 디자인 */
+/* ================================================== */
+@media (max-width: 1023px) {
+  .settings-content {
+    margin-left: 0;
+    padding: 2rem 1rem;
+  }
+  
+  .settings-sidebar {
+    display: none;
+  }
+  
+  .page-header {
+    padding-left: 0;
+  }
+  
+  .table-controls {
+    margin-left: 0;
+    margin-right: 0;
+  }
+  
+  .table-container {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .settings-content {
+    padding: 1rem;
+  }
+  
+  .table-controls {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .control-actions {
+    justify-content: center;
+  }
+  
+  .data-table {
+    font-size: 0.75rem;
+  }
+  
+  .data-table th,
+  .data-table td {
+    padding: 0.5rem 0.25rem;
+  }
+  
+  .page-header h1 {
+    font-size: 1.75rem;
+  }
+}
+
+@media (max-width: 390px) {
+  .control-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .control-actions button {
+    justify-content: center;
+  }
+}

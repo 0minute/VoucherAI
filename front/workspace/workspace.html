@@ -15,6 +15,7 @@
             <!-- Left: Logo/Brand -->
             <div class="nav-brand">
                 <a href="#" class="brand-link" onclick="return false;">
+                    <img src="../common/pwclogofinal.png" alt="Voucher AI Logo" class="brand-logo">
                     <span>Voucher AI</span>
                 </a>
             </div>
@@ -27,9 +28,10 @@
                             <span>Dashboard</span>
                         </a>
                     </li>
+
                     <li class="nav-item">
-                        <a href="../workspace/workspace.html" class="nav-link active" data-testid="nav-workspace">
-                            <span>Workspace</span>
+                        <a href="#" class="nav-link" data-testid="nav-settings" onclick="window.location.href='../settings/settings.html'; return false;">
+                            <span>Settings</span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -67,14 +69,51 @@
                         </li>
                     </ul>
                 </nav>
-                <!-- PwC Logo -->
+                                            <!-- KPOP DEMON HUNTERS Logo -->
                 <div class="sidebar-footer">
-                    <img src="../@pwc오버레이로고.png" alt="PwC Logo" class="pwc-logo" onerror="this.style.display='none'; this.parentNode.innerHTML='<div class=\'pwc-logo-text\'>PwC</div>'">
+                    <img src="../common/kpop_demon_hunters_no_bg2.png" alt="KPOP DEMON HUNTERS Logo" class="kpop-logo" onerror="this.style.display='none'; this.parentNode.innerHTML='<div class=\'kpop-logo-text\'>KPOP DEMON HUNTERS</div>'">
                 </div>
             </aside>
 
+            <!-- 프로젝트명 수정 모달 -->
+            <div id="edit-project-modal" class="modal" aria-hidden="true">
+                <div class="modal-backdrop" onclick="closeEditProjectModal()"></div>
+                <div class="modal-content edit-project-modal-content">
+                    <div class="modal-header">
+                        <h2>프로젝트명 수정</h2>
+                        <button class="modal-close" onclick="closeEditProjectModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="new-project-name" class="form-label">새로운 프로젝트명</label>
+                            <input type="text" id="new-project-name" class="form-input" placeholder="프로젝트명을 입력하세요">
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn-ghost" onclick="closeEditProjectModal()">취소</button>
+                        <button class="btn-primary" onclick="confirmEditProject()">확인</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Main Content -->
             <div class="workspace-content">
+                <!-- Workspace 제목 표시 영역 -->
+                <div class="workspace-title-display" id="workspace-title-display" style="display: none;">
+                    <div class="workspace-title-container">
+                        <h1 class="workspace-title-text" id="workspace-title-text"></h1>
+                        <div class="workspace-title-meta">
+                            <span class="workspace-created-date" id="workspace-created-date"></span>
+                            <button class="btn-edit-project" id="btn-edit-project">
+                                <i class="fas fa-edit"></i>
+                                Project명 수정
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
                 <section id="workspace" data-testid="workspace">
                     <header class="page-header">
                         <h1>증빙 업로드</h1>
@@ -136,7 +175,7 @@
                                         <td class="empty-cell"></td>
                                         <td>
                                             <select class="project-select" disabled>
-                                                <option>프로젝트 선택</option>
+                                                <option>N/A</option>
                                             </select>
                                         </td>
                                         <td class="delete-cell">
@@ -155,7 +194,7 @@
                                         <td class="empty-cell"></td>
                                         <td>
                                             <select class="project-select" disabled>
-                                                <option>프로젝트 선택</option>
+                                                <option>N/A</option>
                                             </select>
                                         </td>
                                         <td class="delete-cell">
@@ -174,7 +213,7 @@
                                         <td class="empty-cell"></td>
                                         <td>
                                             <select class="project-select" disabled>
-                                                <option>프로젝트 선택</option>
+                                                <option>N/A</option>
                                             </select>
                                         </td>
                                         <td class="delete-cell">
@@ -198,6 +237,8 @@
                                 프로젝트명 일괄 수정
                             </button>
                         </div>
+                        
+
 
                             </section>
                         </div>
@@ -317,6 +358,98 @@
     <script src="../common/utils.js"></script>
     <script src="workspace.js"></script>
     <script>
+        // Workspace 제목 표시 기능
+        function displayWorkspaceTitle() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const title = urlParams.get('title');
+            
+            if (title) {
+                const titleDisplay = document.getElementById('workspace-title-display');
+                const titleText = document.getElementById('workspace-title-text');
+                const createdDate = document.getElementById('workspace-created-date');
+                
+                if (titleDisplay && titleText) {
+                    titleText.textContent = title;
+                    titleDisplay.style.display = 'block';
+                    
+                    // 생성일 자동 표시
+                    if (createdDate) {
+                        const now = new Date();
+                        const formattedDate = now.toLocaleDateString('ko-KR', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        });
+                        createdDate.textContent = `생성일: ${formattedDate}`;
+                    }
+                }
+            }
+        }
+        
+        // Project명 수정 모달 열기
+        function setupProjectEditButton() {
+            const editBtn = document.getElementById('btn-edit-project');
+            if (editBtn) {
+                editBtn.addEventListener('click', function() {
+                    const currentTitle = document.getElementById('workspace-title-text').textContent;
+                    const modal = document.getElementById('edit-project-modal');
+                    const input = document.getElementById('new-project-name');
+                    
+                    // 현재 제목을 입력 필드에 설정
+                    input.value = currentTitle;
+                    input.select(); // 텍스트 선택
+                    
+                    // 모달 표시
+                    modal.setAttribute('aria-hidden', 'false');
+                    
+                    // Enter 키 이벤트 리스너 추가
+                    input.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') {
+                            confirmEditProject();
+                        } else if (e.key === 'Escape') {
+                            closeEditProjectModal();
+                        }
+                    });
+                });
+            }
+        }
+        
+        // 프로젝트명 수정 모달 닫기
+        function closeEditProjectModal() {
+            const modal = document.getElementById('edit-project-modal');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+        
+        // 프로젝트명 수정 확인
+        function confirmEditProject() {
+            const input = document.getElementById('new-project-name');
+            const newTitle = input.value.trim();
+            const currentTitle = document.getElementById('workspace-title-text').textContent;
+            
+            if (newTitle && newTitle !== currentTitle) {
+                // 제목 업데이트
+                document.getElementById('workspace-title-text').textContent = newTitle;
+                
+                // URL 업데이트
+                const url = new URL(window.location);
+                url.searchParams.set('title', encodeURIComponent(newTitle));
+                window.history.replaceState({}, '', url);
+                
+                // 모달 닫기
+                closeEditProjectModal();
+                
+            } else if (!newTitle) {
+                // 빈 값인 경우 경고
+                input.focus();
+                input.style.borderColor = '#e74c3c';
+                setTimeout(() => {
+                    input.style.borderColor = '';
+                }, 2000);
+            }
+        }
+        
+
+        
         // Logout 모달 기능
         let logoutModal, logoutConfirm, logoutCancel;
 
@@ -333,6 +466,12 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            // Workspace 제목 표시
+            displayWorkspaceTitle();
+            
+            // Project명 수정 버튼 설정
+            setupProjectEditButton();
+            
             logoutModal = document.getElementById('logout-modal');
             logoutConfirm = document.getElementById('logout-confirm');
             logoutCancel = document.getElementById('logout-cancel');

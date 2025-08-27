@@ -1,0 +1,197 @@
+[
+  {
+    "accountName": "상품매출원가",
+    "accountCode": 45100
+  },
+  {
+    "accountName": "음원제작_작곡,편곡",
+    "accountCode": 45501
+  },
+  {
+    "accountName": "음원제작_앨범제작,인지대",
+    "accountCode": 45502
+  },
+  {
+    "accountName": "음원제작_M/V 제작",
+    "accountCode": 45503
+  },
+  {
+    "accountName": "음원제작_세션",
+    "accountCode": 45504
+  },
+  {
+    "accountName": "음원제작_기타",
+    "accountCode": 45599
+  },
+  {
+    "accountName": "드라마매출원가",
+    "accountCode": 45700
+  },
+  {
+    "accountName": "공연매출원가",
+    "accountCode": 46200
+  },
+  {
+    "accountName": "용역매출원가",
+    "accountCode": 46400
+  },
+  {
+    "accountName": "제품매출원가",
+    "accountCode": 46600
+  },
+  {
+    "accountName": "복리후생비_식대",
+    "accountCode": 51103
+  },
+  {
+    "accountName": "지급임차료",
+    "accountCode": 51900
+  },
+  {
+    "accountName": "보험료_자동차보험",
+    "accountCode": 52101
+  },
+  {
+    "accountName": "보험료_법정보험료",
+    "accountCode": 52102
+  },
+  {
+    "accountName": "차량유지비",
+    "accountCode": 52200
+  },
+  {
+    "accountName": "차량유지비_법인카드",
+    "accountCode": 52201
+  },
+  {
+    "accountName": "운반비",
+    "accountCode": 52400
+  },
+  {
+    "accountName": "운반비_법인카드",
+    "accountCode": 52401
+  },
+  {
+    "accountName": "교육훈련비",
+    "accountCode": 52500
+  },
+  {
+    "accountName": "도서인쇄비_법인카드",
+    "accountCode": 52601
+  },
+  {
+    "accountName": "소모품비",
+    "accountCode": 53000
+  },
+  {
+    "accountName": "소모품비_법인카드",
+    "accountCode": 53001
+  },
+  {
+    "accountName": "지급수수료",
+    "accountCode": 53100
+  },
+  {
+    "accountName": "지급수수료_법인카드",
+    "accountCode": 53101
+  },
+  {
+    "accountName": "대행수수료",
+    "accountCode": 53700
+  },
+  {
+    "accountName": "연예보조_의상ㆍ스타일링",
+    "accountCode": 53801
+  },
+  {
+    "accountName": "연예보조_헤어/메이크업",
+    "accountCode": 53802
+  },
+  {
+    "accountName": "연예보조_법인카드",
+    "accountCode": 53811
+  },
+  {
+    "accountName": "연예보조_기타",
+    "accountCode": 53899
+  },
+  {
+    "accountName": "지급인세_아티스트",
+    "accountCode": 53901
+  },
+  {
+    "accountName": "지급인세_FT",
+    "accountCode": 53907
+  },
+  {
+    "accountName": "지급인세_CN",
+    "accountCode": 53908
+  },
+  {
+    "accountName": "지급인세_연기자",
+    "accountCode": 53909
+  },
+  {
+    "accountName": "지급인세_코미디언",
+    "accountCode": 53910
+  },
+  {
+    "accountName": "광고선전비",
+    "accountCode": 54100
+  },
+  {
+    "accountName": "차량리스료",
+    "accountCode": 55400
+  },
+  { "accountName": "통신비", "accountCode": 56000 },
+  { "accountName": "통신비_법인카드", "accountCode": 56001 },
+  { "accountName": "전기요금", "accountCode": 56100 },
+  { "accountName": "수도요금", "accountCode": 56101 },
+  { "accountName": "가스요금", "accountCode": 56102 },
+  { "accountName": "여비교통비_국내", "accountCode": 56200 },
+  { "accountName": "여비교통비_해외", "accountCode": 56201 },
+  { "accountName": "여비교통비_법인카드", "accountCode": 56202 },
+  { "accountName": "접대비", "accountCode": 56300 },
+  { "accountName": "접대비_법인카드", "accountCode": 56301 },
+  { "accountName": "기부금", "accountCode": 56400 },
+  { "accountName": "잡손실", "accountCode": 56500 },
+  { "accountName": "잡이익", "accountCode": 56600 },
+  { "accountName": "이자비용", "accountCode": 56700 },
+  { "accountName": "이자수익", "accountCode": 56800 },
+  { "accountName": "외환손실", "accountCode": 56900 },
+  { "accountName": "외환이익", "accountCode": 56901 },
+  { "accountName": "해외공연경비", "accountCode": 57000 },
+  { "accountName": "국내공연경비", "accountCode": 57001 },
+  { "accountName": "연습실임차료", "accountCode": 57100 },
+  { "accountName": "연습실관리비", "accountCode": 57101 },
+  { "accountName": "음반제작기타경비", "accountCode": 57200 },
+  { "accountName": "드라마제작기타경비", "accountCode": 57201 },
+  { "accountName": "뮤직비디오촬영비", "accountCode": 57300 },
+  { "accountName": "공연세트제작비", "accountCode": 57301 },
+  { "accountName": "연습생지원비", "accountCode": 57400 },
+  { "accountName": "연습생숙소비", "accountCode": 57401 },
+  { "accountName": "연습생식대", "accountCode": 57402 },
+  { "accountName": "연습생교육비", "accountCode": 57403 },
+  { "accountName": "스태프인건비", "accountCode": 57500 },
+  { "accountName": "아티스트인건비", "accountCode": 57501 },
+  { "accountName": "기타인건비", "accountCode": 57502 },
+  { "accountName": "무대장치비", "accountCode": 57600 },
+  { "accountName": "조명장치비", "accountCode": 57601 },
+  { "accountName": "음향장치비", "accountCode": 57602 },
+  { "accountName": "의상제작비", "accountCode": 57700 },
+  { "accountName": "소품제작비", "accountCode": 57701 },
+  { "accountName": "연예홍보비", "accountCode": 57800 },
+  { "accountName": "연예홍보비_법인카드", "accountCode": 57801 },
+  { "accountName": "콘텐츠플랫폼이용료", "accountCode": 57900 },
+  { "accountName": "플랫폼수수료", "accountCode": 57901 },
+  { "accountName": "음원유통수수료", "accountCode": 57902 },
+  { "accountName": "저작권사용료", "accountCode": 57903 },
+  { "accountName": "저작권수익", "accountCode": 57904 },
+  { "accountName": "연예관련보험료", "accountCode": 57905 },
+  { "accountName": "행사비", "accountCode": 58000 },
+  { "accountName": "행사비_법인카드", "accountCode": 58001 },
+  { "accountName": "법률자문료", "accountCode": 58100 },
+  { "accountName": "회계자문료", "accountCode": 58101 },
+  { "accountName": "세무자문료", "accountCode": 58102 },
+  { "accountName": "컨설팅비", "accountCode": 58103 }
+]

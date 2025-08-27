@@ -11,6 +11,10 @@ class WorkspaceManager {
     this.fileCounter = 0;
     this.uploadQueue = new Map(); // file ID -> upload promise
     
+    // 임시 선택된 파일들
+    this.tempSelectedFiles = null;
+    this.tempSelectedZip = null;
+    
     this.init();
   }
 
@@ -22,7 +26,11 @@ class WorkspaceManager {
     this.setupModalHandlers();
     this.loadProjects();
     
+    // URL 파라미터에서 Workspace 정보 가져오기
+    this.loadWorkspaceFromURL();
+    
     this.updateEmptyState();
+    this.updateUploadPreview(); // 초기 업로드 미리보기 설정
     
     console.log('🚀 Workspace Manager initialized');
   }
@@ -68,20 +76,39 @@ class WorkspaceManager {
       }
     });
 
-    // 버튼 클릭
-    btnUploadImages?.addEventListener('click', () => fileInput.click());
-    btnUploadZip?.addEventListener('click', () => zipInput.click());
+      // 버튼 클릭 - 실제 업로드 처리
+  btnUploadImages?.addEventListener('click', () => {
+    if (this.tempSelectedFiles && this.tempSelectedFiles.length > 0) {
+      this.handleFileSelect(this.tempSelectedFiles);
+      this.tempSelectedFiles = null;
+      this.updateUploadPreview();
+    } else {
+      fileInput.click();
+    }
+  });
+  
+  btnUploadZip?.addEventListener('click', () => {
+    if (this.tempSelectedZip) {
+      this.handleZipSelect([this.tempSelectedZip]);
+      this.tempSelectedZip = null;
+      this.updateUploadPreview();
+    } else {
+      zipInput.click();
+    }
+  });
 
-    // 파일 선택
-    fileInput.addEventListener('change', (e) => {
-      this.handleFileSelect(Array.from(e.target.files));
-      e.target.value = ''; // 리셋
-    });
+      // 파일 선택 - 선택된 파일을 임시 저장만 하고 테이블에는 추가하지 않음
+  fileInput.addEventListener('change', (e) => {
+    this.tempSelectedFiles = Array.from(e.target.files);
+    this.updateUploadPreview();
+    e.target.value = ''; // 리셋
+  });
 
-    zipInput?.addEventListener('change', (e) => {
-      this.handleZipSelect(Array.from(e.target.files));
-      e.target.value = ''; // 리셋
-    });
+  zipInput?.addEventListener('change', (e) => {
+    this.tempSelectedZip = e.target.files[0];
+    this.updateUploadPreview();
+    e.target.value = ''; // 리셋
+  });
 
     // 드래그 앤 드롭
     uploadBox.addEventListener('dragover', (e) => {
@@ -96,13 +123,14 @@ class WorkspaceManager {
       }
     });
 
-    uploadBox.addEventListener('drop', (e) => {
-      e.preventDefault();
-      uploadBox.classList.remove('drag-over');
-      
-      const files = Array.from(e.dataTransfer.files);
-      this.handleFileSelect(files);
-    });
+      uploadBox.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadBox.classList.remove('drag-over');
+    
+    const files = Array.from(e.dataTransfer.files);
+    this.tempSelectedFiles = files;
+    this.updateUploadPreview();
+  });
 
     console.log('📁 Upload handlers initialized');
   }
@@ -183,7 +211,6 @@ class WorkspaceManager {
     });
 
     this.updateEmptyState();
-    window.toast.show('info', '업로드 시작', `${uniqueFiles.length}개 파일 업로드를 시작합니다.`);
   }
 
   handleZipSelect(files) {
@@ -191,11 +218,10 @@ class WorkspaceManager {
     
     const zipFile = files[0];
     if (!zipFile.name.toLowerCase().endsWith('.zip')) {
-      window.toast.show('error', '파일 형식 오류', 'ZIP 파일만 선택할 수 있습니다.');
       return;
     }
 
-    window.toast.show('info', 'ZIP 처리', 'ZIP 파일을 분석 중입니다...');
+
     
     // 실제 구현에서는 백엔드 API 호출
     setTimeout(() => {
@@ -216,7 +242,6 @@ class WorkspaceManager {
       });
 
       this.updateEmptyState();
-      window.toast.show('success', 'ZIP 해제 완료', `${mockExtractedFiles.length}개 파일이 추출되었습니다.`);
     }, 2000);
   }
 
@@ -225,12 +250,10 @@ class WorkspaceManager {
     const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
 
     if (file.size > maxSize) {
-      window.toast.show('error', '파일 크기 오류', `${file.name}은 크기가 너무 큽니다. (최대 10MB)`);
       return false;
     }
 
     if (!allowedTypes.includes(file.type)) {
-      window.toast.show('error', '파일 형식 오류', `${file.name}은 지원되지 않는 형식입니다.`);
       return false;
     }
 
@@ -265,6 +288,9 @@ class WorkspaceManager {
     const emptyRow = document.querySelector('.empty-row');
     if (emptyRow) {
       this.convertEmptyRowToFileRow(emptyRow, fileRow);
+    } else {
+      // 빈 행이 없으면 새로운 행을 생성
+      this.createNewFileRow(fileRow);
     }
   }
 
@@ -274,6 +300,22 @@ class WorkspaceManager {
     emptyRow.dataset.fileId = fileRow.id;
     emptyRow.innerHTML = this.getTableRowHTML(fileRow);
     this.attachRowEventListeners(emptyRow, fileRow);
+  }
+
+  createNewFileRow(fileRow) {
+    const tbody = document.getElementById('file-rows');
+    if (!tbody) return;
+
+    // 새로운 행 생성
+    const newRow = document.createElement('tr');
+    newRow.dataset.fileId = fileRow.id;
+    newRow.innerHTML = this.getTableRowHTML(fileRow);
+    
+    // tbody에 추가
+    tbody.appendChild(newRow);
+    
+    // 이벤트 리스너 연결
+    this.attachRowEventListeners(newRow, fileRow);
   }
 
   getTableRowHTML(fileRow) {
@@ -294,7 +336,7 @@ class WorkspaceManager {
       </td>
       <td>
         <select class="project-select">
-          <option value="">프로젝트 선택</option>
+          <option value="">N/A</option>
           ${projectOptions}
         </select>
       </td>
@@ -341,8 +383,8 @@ class WorkspaceManager {
 
     const row = document.querySelector(`tr[data-file-id="${fileId}"]`);
     if (row) {
-      // 행을 빈 행으로 되돌리기
-      this.convertToEmptyRow(row);
+      // 행을 완전히 제거
+      row.remove();
       
       this.fileRows.delete(fileId);
       this.selectedFiles.delete(fileId);
@@ -350,50 +392,18 @@ class WorkspaceManager {
       
       this.updateSelectionState();
       this.renumberFiles();
-      
-      window.toast.show('success', '파일 삭제', `${fileRow.name}이 삭제되었습니다.`);
     }
   }
 
-  convertToEmptyRow(row) {
-    row.classList.add('empty-row');
-    row.removeAttribute('data-file-id');
-    row.innerHTML = `
-      <td><input type="checkbox" disabled /></td>
-      <td>-</td>
-      <td class="empty-cell"></td>
-      <td>
-        <select class="project-select" disabled>
-          <option>프로젝트 선택</option>
-        </select>
-      </td>
-      <td class="delete-cell">
-        <svg class="delete-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3 6H5H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M10 11V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M14 11V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </td>
-    `;
-  }
+
 
   renumberFiles() {
-    // 빈 행이 아닌 행들만 넘버링
-    const fileRows = document.querySelectorAll('#file-rows tr:not(.empty-row)');
+    // 모든 파일 행 넘버링
+    const fileRows = document.querySelectorAll('#file-rows tr[data-file-id]');
     fileRows.forEach((row, index) => {
       const numberCell = row.children[1];
       if (numberCell) {
         numberCell.textContent = index + 1;
-      }
-    });
-    
-    // 빈 행은 '-'로 유지
-    const emptyRows = document.querySelectorAll('#file-rows tr.empty-row');
-    emptyRows.forEach((row) => {
-      const numberCell = row.children[1];
-      if (numberCell) {
-        numberCell.textContent = '-';
       }
     });
   }
@@ -429,9 +439,10 @@ class WorkspaceManager {
       selectedCountEl.textContent = `${selectedCount}개 선택됨`;
     }
 
-    // 전체 선택 체크박스 상태
+    // 전체 선택 체크박스 상태 및 활성화
     const selectAll = document.getElementById('select-all');
     if (selectAll) {
+      selectAll.disabled = totalCount === 0;
       selectAll.checked = selectedCount === totalCount && totalCount > 0;
       selectAll.indeterminate = selectedCount > 0 && selectedCount < totalCount;
     }
@@ -444,12 +455,113 @@ class WorkspaceManager {
   }
 
   updateEmptyState() {
-    // 빈 행을 사용하므로 테이블은 항상 표시
-    const emptyState = document.getElementById('empty-table');
+    // 테이블은 항상 표시
     const tableContainer = document.querySelector('.table-container');
+    if (tableContainer) {
+      tableContainer.removeAttribute('hidden');
+    }
+  }
+
+    // 업로드 미리보기 업데이트
+  updateUploadPreview() {
+    const uploadBox = document.querySelector('[data-testid="upload-dropzone"]');
+    if (!uploadBox) return;
+
+    if (this.tempSelectedFiles && this.tempSelectedFiles.length > 0) {
+      // 파일이 선택된 경우: 기존 요소들을 숨기고 파일 목록만 표시
+      this.hideInitialUploadElements(uploadBox);
+      this.showFilePreview(uploadBox, this.tempSelectedFiles);
+      
+    } else if (this.tempSelectedZip) {
+      // ZIP 파일이 선택된 경우: 기존 요소들을 숨기고 ZIP 파일 정보만 표시
+      this.hideInitialUploadElements(uploadBox);
+      this.showZipPreview(uploadBox, this.tempSelectedZip);
+      
+    } else {
+      // 기본 상태: 모든 초기 요소들을 다시 표시
+      this.showInitialUploadElements(uploadBox);
+    }
+  }
+
+  // 초기 업로드 요소들을 숨기기
+  hideInitialUploadElements(uploadBox) {
+    const uploadIcon = uploadBox.querySelector('.upload-icon');
+    const uploadMent = uploadBox.querySelector('.upload-ment');
+    const uploadInstructions = uploadBox.querySelector('.upload-instructions');
     
-    emptyState?.setAttribute('hidden', '');
-    tableContainer?.removeAttribute('hidden');
+    if (uploadIcon) uploadIcon.style.display = 'none';
+    if (uploadMent) uploadMent.style.display = 'none';
+    if (uploadInstructions) uploadInstructions.style.display = 'none';
+  }
+
+  // 초기 업로드 요소들을 다시 표시
+  showInitialUploadElements(uploadBox) {
+    const uploadIcon = uploadBox.querySelector('.upload-icon');
+    const uploadMent = uploadBox.querySelector('.upload-ment');
+    const uploadInstructions = uploadBox.querySelector('.upload-instructions');
+    
+    if (uploadIcon) uploadIcon.style.display = 'block';
+    if (uploadMent) uploadMent.style.display = 'block';
+    if (uploadInstructions) uploadInstructions.style.display = 'block';
+    
+    // 기존 파일 미리보기 제거
+    const existingPreview = uploadBox.querySelector('.upload-preview-container');
+    if (existingPreview) {
+      existingPreview.remove();
+    }
+  }
+
+  // 파일 미리보기 표시
+  showFilePreview(uploadBox, files) {
+    // 기존 파일 미리보기 제거
+    const existingPreview = uploadBox.querySelector('.upload-preview-container');
+    if (existingPreview) {
+      existingPreview.remove();
+    }
+
+    const previewContainer = document.createElement('div');
+    previewContainer.className = 'upload-preview-container';
+    
+    previewContainer.innerHTML = `
+      <div class="upload-preview-header">
+        ${files.length}개 파일 선택됨
+      </div>
+      <div class="upload-preview-files">
+        ${files.map((file, index) => `
+          <div class="upload-preview-file-item">
+            <span class="upload-preview-file-name">${index + 1}. ${file.name}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    
+    uploadBox.appendChild(previewContainer);
+  }
+
+  // ZIP 파일 미리보기 표시
+  showZipPreview(uploadBox, zipFile) {
+    // 기존 파일 미리보기 제거
+    const existingPreview = uploadBox.querySelector('.upload-preview-container');
+    if (existingPreview) {
+      existingPreview.remove();
+    }
+
+    const previewContainer = document.createElement('div');
+    previewContainer.className = 'upload-preview-container';
+    
+    previewContainer.innerHTML = `
+      <div class="upload-preview-header">
+        ZIP 파일 선택됨
+      </div>
+      <div class="upload-preview-files">
+        <span class="upload-preview-file-name">${zipFile.name}</span>
+      </div>
+      <div class="upload-preview-instruction">
+        아래 <strong>ZIP 파일 업로드</strong> 버튼을 클릭하세요
+      </div>
+    `;
+    
+    uploadBox.appendChild(previewContainer);
   }
 
   // ================================================== //
@@ -466,13 +578,10 @@ class WorkspaceManager {
       await uploadPromise;
       
       this.uploadQueue.delete(fileRow.id);
-      window.toast.show('success', '업로드 완료', `${fileRow.name} 업로드가 완료되었습니다.`);
       
     } catch (error) {
       fileRow.status = 'failed';
       this.uploadQueue.delete(fileRow.id);
-      
-      window.toast.show('error', '업로드 실패', `${fileRow.name} 업로드에 실패했습니다.`);
     }
   }
 
@@ -491,11 +600,16 @@ class WorkspaceManager {
     try {
       // 실제 구현에서는 GET /projects API 호출
       const mockProjects = [
-        { id: 'proj_1', name: '2025_Q1_엔터테인먼트', code: 'P-001' },
-        { id: 'proj_2', name: '2025_Q1_광고비', code: 'P-002' },
-        { id: 'proj_3', name: '2025_사무용품', code: 'P-003' },
-        { id: 'proj_4', name: '2025_마케팅', code: 'P-004' },
-        { id: 'proj_5', name: '2025_법무비용', code: 'P-005' }
+        { id: 'proj_1', name: '루미 (HUNTRIX)' },
+        { id: 'proj_2', name: '미라 (HUNTRIX)' },
+        { id: 'proj_3', name: '조이 (HUNTRIX)' },
+        { id: 'proj_4', name: '진우 (SajaBoys)' },
+        { id: 'proj_5', name: '베이비 (SajaBoys)' },
+        { id: 'proj_6', name: '미스터리 (SajaBoys)' },
+        { id: 'proj_7', name: '로맨스 (SajaBoys)' },
+        { id: 'proj_8', name: '애비 (SajaBoys)' },
+        { id: 'proj_9', name: 'HUNTRIX 유닛 프로젝트' },
+        { id: 'proj_10', name: 'SajaBoys 유닛 프로젝트' }
       ];
 
       // 상태에 저장
@@ -510,7 +624,6 @@ class WorkspaceManager {
       
     } catch (error) {
       console.error('Failed to load projects:', error);
-      window.toast.show('error', '프로젝트 로딩 실패', '프로젝트 목록을 불러오지 못했습니다. 다시 시도해주세요.');
     }
   }
 
@@ -518,9 +631,12 @@ class WorkspaceManager {
     const select = document.getElementById('bulk-project-select');
     if (!select) return;
 
-    select.innerHTML = Array.from(this.projects.values())
-      .map(p => `<option value="${p.id}">${p.name} (${p.code})</option>`)
-      .join('');
+    select.innerHTML = `
+      <option value="">N/A</option>
+      ${Array.from(this.projects.values())
+        .map(p => `<option value="${p.id}">${p.name}</option>`)
+        .join('')}
+    `;
   }
 
   // ================================================== //
@@ -529,7 +645,6 @@ class WorkspaceManager {
   openBulkProjectModal() {
     const selectedCount = this.selectedFiles.size;
     if (selectedCount === 0) {
-      window.toast.show('warning', '선택 필요', '수정할 파일을 먼저 선택해주세요.');
       return;
     }
 
@@ -586,8 +701,6 @@ class WorkspaceManager {
     });
 
     this.closeBulkProjectModal();
-    window.toast.show('success', '일괄 수정 완료', 
-      `${updatedCount}개 파일의 프로젝트가 "${selectedProject.name}"(으)로 변경되었습니다.`);
   }
 
   // ================================================== //
@@ -645,6 +758,50 @@ class WorkspaceManager {
       if (sidebar) {
         sidebar.style.display = 'none';
       }
+    }
+  }
+
+  // ================================================== //
+  // URL 파라미터에서 Workspace 정보 로드
+  // ================================================== //
+  loadWorkspaceFromURL() {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const workspaceId = urlParams.get('id');
+      const workspaceTitle = urlParams.get('title');
+
+      if (workspaceTitle) {
+        // Workspace 제목 표시
+        this.displayWorkspaceTitle(workspaceTitle);
+        
+        // 생성일 설정 (현재 날짜)
+        const currentDate = new Date().toLocaleDateString('ko-KR', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        
+        const createdDateElement = document.getElementById('workspace-created-date');
+        if (createdDateElement) {
+          createdDateElement.textContent = `생성일: ${currentDate}`;
+        }
+
+        console.log(`✅ Workspace 로드됨: ${workspaceTitle} (ID: ${workspaceId})`);
+      } else {
+        console.log('⚠️ URL에 Workspace 정보가 없습니다.');
+      }
+    } catch (error) {
+      console.error('❌ Workspace 정보 로드 실패:', error);
+    }
+  }
+
+  displayWorkspaceTitle(title) {
+    const titleDisplay = document.getElementById('workspace-title-display');
+    const titleText = document.getElementById('workspace-title-text');
+    
+    if (titleDisplay && titleText) {
+      titleText.textContent = title;
+      titleDisplay.style.display = 'block';
     }
   }
 }

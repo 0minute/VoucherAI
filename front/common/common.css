@@ -106,10 +106,12 @@ body {
   height: 100%;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 1rem 0 1rem;
 }
 
 .nav-brand .brand-link {
+  display: flex;
+  align-items: center;
   text-decoration: none;
   font-size: 1.5rem;
   font-weight: 700;
@@ -120,6 +122,17 @@ body {
   background-clip: text;
   transition: var(--transition);
   animation: gradientShift 3s ease-in-out infinite;
+  gap: 0.75rem;
+  margin-left: -2.8rem;
+}
+
+.nav-brand .brand-logo {
+  height: 0.9em;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  margin-right: 0;
+  vertical-align: middle;
 }
 
 .nav-brand .brand-link:hover {
@@ -357,18 +370,21 @@ body {
   z-index: 950;
 }
 
-.pwc-logo {
-  width: 80px;
-  opacity: 0.7;
+.kpop-logo {
+  width: 120px;
+  opacity: 0.8;
   max-width: 100%;
   height: auto;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
-.pwc-logo-text {
+.kpop-logo-text {
   color: var(--text-muted);
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   opacity: 0.7;
+  text-align: center;
+  line-height: 1.2;
 }
 
 /* ================================================== */

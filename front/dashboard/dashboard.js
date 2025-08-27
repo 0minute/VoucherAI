@@ -4,10 +4,9 @@
 
 class DashboardManager {
   constructor() {
-    this.selectedWorklogs = new Set();
-    this.worklogs = [];
+    this.workspaces = [];
     this.journals = [];
-    this.visibleColumns = new Set(['date', 'customer', 'amount', 'type', 'account', 'source']);
+    this.isExpanded = false;
     
     this.init();
   }
@@ -15,53 +14,39 @@ class DashboardManager {
   init() {
     this.setupEventListeners();
     this.setupSidebarNavigation();
-    this.loadWorklogs();
-    this.updateURL();
+    this.loadWorkspaces();
     
     console.log('📊 Dashboard Manager initialized');
   }
 
   setupEventListeners() {
-    // 검색 및 필터
-    const searchInput = document.getElementById('worklog-search');
-    const dateFrom = document.getElementById('date-from');
-    const dateTo = document.getElementById('date-to');
-    const sortOption = document.getElementById('sort-option');
-
-    [searchInput, dateFrom, dateTo, sortOption].forEach(el => {
-      if (el) {
-        el.addEventListener('input', () => this.applyFilters());
-      }
-    });
-
-    // 컬럼 토글 드롭다운
-    const columnToggle = document.querySelector('[data-testid="column-toggle"]');
-    if (columnToggle) {
-      columnToggle.addEventListener('click', () => this.toggleColumnDropdown());
+    // Workspace 생성 버튼
+    const createWorkspaceBtn = document.getElementById('create-workspace-btn');
+    if (createWorkspaceBtn) {
+      createWorkspaceBtn.addEventListener('click', () => this.showWorkspaceModal());
     }
 
-    // 컬럼 체크박스
-    document.querySelectorAll('#column-dropdown input[type="checkbox"]').forEach(checkbox => {
-      checkbox.addEventListener('change', (e) => this.toggleColumn(e.target.value, e.target.checked));
-    });
+    // Workspace 검색
+    const workspaceSearch = document.getElementById('workspace-search');
+    if (workspaceSearch) {
+      workspaceSearch.addEventListener('input', () => this.applyWorkspaceFilters());
+    }
 
-    // 다운로드 버튼
-    const downloadCSV = document.getElementById('download-csv');
-    const downloadExcel = document.getElementById('download-excel');
-    
-    if (downloadCSV) downloadCSV.addEventListener('click', () => this.downloadCSV());
-    if (downloadExcel) downloadExcel.addEventListener('click', () => this.downloadExcel());
+    // 전표 미리보기 정렬 옵션
+    const sortSelect = document.getElementById('sort-option');
+    if (sortSelect) {
+      sortSelect.addEventListener('change', () => this.applyJournalSort());
+    }
 
-    // URL 변경 감지
-    window.addEventListener('popstate', () => this.updateFromURL());
-
-    // 드롭다운 외부 클릭 시 닫기
-    document.addEventListener('click', (e) => {
-      const dropdown = document.querySelector('.dropdown');
-      if (dropdown && !dropdown.contains(e.target)) {
-        dropdown.classList.remove('active');
-      }
-    });
+    // 펼치기/접기 버튼
+    const expandBtn = document.getElementById('expand-workspaces');
+    const collapseBtn = document.getElementById('collapse-workspaces');
+    if (expandBtn) {
+      expandBtn.addEventListener('click', () => this.expandWorkspaces());
+    }
+    if (collapseBtn) {
+      collapseBtn.addEventListener('click', () => this.collapseWorkspaces());
+    }
   }
 
   setupSidebarNavigation() {
@@ -92,52 +77,56 @@ class DashboardManager {
     }
   }
 
-  async loadWorklogs() {
+  async loadWorkspaces() {
     try {
-      // Mock API 호출 - 실제로는 GET /worklogs
-      const mockWorklogs = [
+      // 로컬 스토리지 초기화하고 새로운 더미 데이터 강제 적용
+      localStorage.removeItem('workspaces');
+      
+      // 기본 Workspace 데이터 생성 (첫 번째는 비우고, 나머지는 dummy data)
+      this.workspaces = [
         {
-          id: 'wl_2025_w34',
-          title: '2025-W34',
-          period: { from: '2025-08-18', to: '2025-08-24' },
-          uploadCount: 15,
-          journalCount: 12,
-          updatedAt: '2025-08-24T15:30:00Z'
+          id: '',
+          title: '',
+          status: '',
+          createdAt: ''
         },
         {
-          id: 'wl_2025_w33',
-          title: '2025-W33',
-          period: { from: '2025-08-11', to: '2025-08-17' },
-          uploadCount: 8,
-          journalCount: 6,
-          updatedAt: '2025-08-17T09:45:00Z'
+          id: 'ws_002',
+          title: '2506 HUNTRIX 공연매출 정산',
+          status: 'active',
+          createdAt: '2025-07-05T00:00:00Z'
         },
         {
-          id: 'wl_2025_w32',
-          title: '2025-W32',
-          period: { from: '2025-08-04', to: '2025-08-10' },
-          uploadCount: 22,
-          journalCount: 18,
-          updatedAt: '2025-08-10T14:20:00Z'
+          id: 'ws_003',
+          title: '2505 SajaBoys 스타일링 비용 정산',
+          status: 'completed',
+          createdAt: '2025-06-03T00:00:00Z'
         }
       ];
+      localStorage.setItem('workspaces', JSON.stringify(this.workspaces));
 
-      this.worklogs = mockWorklogs;
-      this.renderWorklogGrid();
-      this.updateFromURL();
+      // 생성일 순으로 정렬 (최신순)
+      this.workspaces.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      
+      this.renderWorkspaceGrid();
+      
+      // 더미 분개 데이터 로드
+      this.loadDummyJournals();
       
     } catch (error) {
-      console.error('Worklog 로딩 실패:', error);
-      window.toast.show('error', '로딩 실패', 'Workspace 기록을 불러오지 못했습니다.');
-      this.showEmptyState('worklog');
+      console.error('Workspace 로딩 실패:', error);
+      window.toast.show('error', '로딩 실패', 'Workspace를 불러오지 못했습니다.');
+      this.showEmptyState('workspace');
     }
   }
 
-  renderWorklogGrid() {
-    const grid = document.getElementById('worklog-grid');
-    const empty = document.getElementById('worklog-empty');
+
+
+  renderWorkspaceGrid() {
+    const grid = document.getElementById('workspace-grid');
+    const empty = document.getElementById('workspace-empty');
     
-    if (this.worklogs.length === 0) {
+    if (this.workspaces.length === 0) {
       grid.style.display = 'none';
       empty.style.display = 'block';
       return;
@@ -146,367 +135,246 @@ class DashboardManager {
     grid.style.display = 'grid';
     empty.style.display = 'none';
     
-    grid.innerHTML = this.worklogs.map(worklog => this.createWorklogCard(worklog)).join('');
+    // 펼치기/접기 상태에 따라 표시할 workspace 결정
+    let displayWorkspaces = this.workspaces;
+    if (!this.isExpanded && this.workspaces.length > 3) {
+      displayWorkspaces = this.workspaces.slice(0, 3);
+    }
+    
+    grid.innerHTML = displayWorkspaces.map(workspace => this.createWorkspaceCard(workspace)).join('');
     
     // 카드 이벤트 리스너 추가
-    this.attachWorklogCardListeners();
+    this.attachWorkspaceCardListeners();
+    
+    // 펼치기/접기 버튼 상태 업데이트
+    this.updateExpandControls();
   }
 
-  createWorklogCard(worklog) {
-    const isSelected = this.selectedWorklogs.has(worklog.id);
-    const updatedDate = new Date(worklog.updatedAt).toLocaleDateString('ko-KR');
+  // 더미 분개 데이터 로드
+  async loadDummyJournals() {
+    try {
+      // dashboard_dummy_transaction.json 파일 로드
+      const response = await fetch('../common/dashboard_dummy_transaction.json');
+      const dummyData = await response.json();
+      
+      this.journals = dummyData;
+      this.renderJournalTable();
+      
+    } catch (error) {
+      console.error('더미 분개 데이터 로딩 실패:', error);
+      // 에러 발생 시 하드코딩된 데이터 사용
+      this.loadHardcodedJournals();
+    }
+  }
+
+  // 하드코딩된 분개 데이터 (JSON 파일 로드 실패 시 사용)
+  loadHardcodedJournals() {
+    this.journals = [
+      {"날짜":"2025/01/15","번호":14,"계정코드":25301,"계정과목":"미지급금(일반)","차변":null,"대변":429000,"적요":"#HUNTRIX_미니 1집 JK 의상 수선비_25.01","거래처코드":"18761","거래처명":"DemonHunters","PJT":"","PJT7":""},
+      {"날짜":"2025/01/15","번호":14,"계정코드":13500,"계정과목":"부가세대급금","차변":39000,"대변":null,"적요":"#HUNTRIX_미니 1집 JK 의상 수선비_25.01","거래처코드":"18761","거래처명":"DemonHunters","PJT":"","PJT7":""},
+      {"날짜":"2025/01/15","번호":14,"계정코드":53801,"계정과목":"연예보조_의상ㆍ스타일링","차변":390000,"대변":null,"적요":"#HUNTRIX_미니 1집 JK 의상 수선비_25.01","거래처코드":"18761","거래처명":"DemonHunters","PJT":"H000000001","PJT7":"HUNTRIX"},
+      {"날짜":"2025/01/21","번호":19,"계정코드":10800,"계정과목":"외상매출금","차변":3850000,"대변":null,"적요":"행사_#루미_HUNTRIX 쇼케이스 출연료","거래처코드":"10916","거래처명":"DemonHunters","PJT":"","PJT7":""},
+      {"날짜":"2025/01/21","번호":19,"계정코드":25500,"계정과목":"부가세예수금","차변":null,"대변":350000,"적요":"행사_#루미_HUNTRIX 쇼케이스 출연료","거래처코드":"10916","거래처명":"DemonHunters","PJT":"","PJT7":""},
+      {"날짜":"2025/01/21","번호":19,"계정코드":41305,"계정과목":"출연료매출_행사","차변":null,"대변":3500000,"적요":"행사_#루미_HUNTRIX 쇼케이스 출연료","거래처코드":"10916","거래처명":"DemonHunters","PJT":"LUMI0000001","PJT7":"루미"},
+      {"날짜":"2025/01/23","번호":13,"계정코드":25301,"계정과목":"미지급금(일반)","차변":300000,"대변":null,"적요":"SajaBoys#진우_서울 팬미팅 아트워크(바리에이션) 비용(예술인)","거래처코드":"71682","거래처명":"DemonHunters","PJT":"","PJT7":""},
+      {"날짜":"2025/01/23","번호":13,"계정코드":25301,"계정과목":"미지급금(일반)","차변":250000,"대변":null,"적요":"#조이_서울 팬미팅 아트워크(바리에이션) 비용(예술인)","거래처코드":"71682","거래처명":"DemonHunters","PJT":"","PJT7":""},
+      {"날짜":"2025/01/23","번호":13,"계정코드":25301,"계정과목":"미지급금(일반)","차변":13200000,"대변":null,"적요":"#SajaBoys_스타일링 인건비_24.12_(원천사업)","거래처코드":"71738","거래처명":"DemonHunters","PJT":"","PJT7":""},
+      {"날짜":"2025/01/23","번호":13,"계정코드":25301,"계정과목":"미지급금(일반)","차변":2750000,"대변":null,"적요":"#SajaBoys_스타일링 인건비_24.12_(원천사업)_JP","거래처코드":"71738","거래처명":"DemonHunters","PJT":"","PJT7":""},
+      {"날짜":"2025/01/23","번호":13,"계정코드":25301,"계정과목":"미지급금(일general)","차변":5000000,"대변":null,"적요":"#HUNTRIX_미니 1집 JK 스타일링비_(원천사업)","거래처코드":"72026","거래처명":"DemonHunters","PJT":"","PJT7":""},
+      {"날짜":"2025/01/23","번호":13,"계정코드":25301,"계정과목":"미지급금(일반)","차변":900000,"대변":null,"적요":"#SajaBoys,#HUNTRIX_MD 촬영 비하인드/언박싱 영상 편집 외주비_24.12_(원천사업)","거래처코드":"71996","거래처명":"DemonHunters","PJT":"","PJT7":""},
+      {"날짜":"2025/01/23","번호":13,"계정코드":25301,"계정과목":"미지급금(일반)","차변":500000,"대변":null,"적요":"#SajaBoys_페스티벌 비하인드 영상 편집 외주비_24.12_(원천사업)","거래처코드":"72022","거래처명":"DemonHunters","PJT":"","PJT7":""},
+      {"날짜":"2025/01/23","번호":13,"계정코드":25301,"계정과목":"미지급금(일반)","차변":1900000,"대변":null,"적요":"HUNTRIX#루미,SajaBoys#진우_비하인드 영상 편집 외주비_24.12_(원천사업)","거래처코드":"71998","거래처명":"DemonHunters","PJT":"","PJT7":""},
+      {"날짜":"2025/01/23","번호":13,"계정코드":25301,"계정과목":"미지급금(일반)","차변":1188000,"대변":null,"적요":"#HUNTRIX_미니1집 JK H버전 발전차 비용","거래처코드":"29895","거래처명":"DemonHunters","PJT":"","PJT7":""},
+      {"날짜":"2025/01/23","번호":13,"계정코드":25301,"계정과목":"미지급금(일반)","차변":1540000,"대변":null,"적요":"#HUNTRIX_미니1집 JK H버전 스튜디오 추가 대관 비용","거래처코드":"11435","거래처명":"DemonHunters","PJT":"","PJT7":""},
+      {"날짜":"2025/01/23","번호":13,"계정코드":25301,"계정과목":"미지급금(일반)","차변":4300000,"대변":null,"적요":"DemonHunters 협회 정기회비(연회비)","거래처코드":"11193","거래처명":"DemonHunters","PJT":"","PJT7":""},
+      {"날짜":"2025/01/23","번호":13,"계정코드":25301,"계정과목":"미지급금(일반)","차변":2102000,"대변":null,"적요":"SajaBoys#로맨스_피부클리닉 비용_25.01_(현금영수증)","거래처코드":"14634","거래처명":"DemonHunters","PJT":"","PJT7":""},
+      {"날짜":"2025/01/23","번호":13,"계정코드":25301,"계정과목":"미지급금(일반)","차변":220000,"대변":null,"적요":"#조이_연말 팬미팅 라이브 보컬 메인 튠비_JP","거래처코드":"16999","거래처명":"DemonHunters","PJT":"","PJT7":""},
+      {"날짜":"2025/01/23","번호":13,"계정코드":25301,"계정과목":"미지급금(일반)","차변":300000,"대변":null,"적요":"#조이_서울 팬미팅 '그대와 함께' INST 제작비","거래처코드":"16918","거래처명":"DemonHunters","PJT":"","PJT7":""},
+      {"날짜":"2025/01/23","번호":13,"계정코드":25301,"계정과목":"미지급금(일반)","차변":800000,"대변":null,"적요":"HUNTRIX#미라_아티스트 숙소 지원비_25.01","거래처코드":"70357","거래처명":"DemonHunters","PJT":"","PJT7":""},
+    
+      {"날짜":"2025/01/31","번호":161,"계정코드":53801,"계정과목":"연예보조_의상ㆍ스타일링","차변":2000000,"대변":null,"적요":"#조이_1월 스타일리스트 비용(스케줄:영화 촬영)_JP","거래처코드":"29033","거래처명":"DemonHunters","PJT":"JOY0002","PJT7":"조이"},
+      {"날짜":"2025/01/31","번호":161,"계정코드":53801,"계정과목":"연예보조_의상ㆍ스타일링","차변":300000,"대변":null,"적요":"#조이_1월 스타일리스트 비용(스케줄:드라마 촬영)","거래처코드":"29033","거래처명":"DemonHunters","PJT":"JOY0002","PJT7":"조이"},
+      {"날짜":"2025/01/31","번호":161,"계정코드":53801,"계정과목":"연예보조_의상ㆍ스타일링","차변":1000000,"대변":null,"적요":"#조이_1월 스타일리스트 비용(스케줄:패션위크)","거래처코드":"29033","거래처명":"DemonHunters","PJT":"JOY0002","PJT7":"조이"},
+      {"날짜":"2025/01/31","번호":161,"계정코드":53801,"계정과목":"연예보조_의상ㆍ스타일링","차변":26400,"대변":null,"적요":"#조이_1월 의상 세탁 비용","거래처코드":"29033","거래처명":"DemonHunters","PJT":"JOY0002","PJT7":"조이"},
+      {"날짜":"2025/01/31","번호":161,"계정코드":13500,"계정과목":"부가세대급금","차변":332640,"대변":null,"적요":"#조이_1월 스타일리스트 비용","거래처코드":"29033","거래처명":"DemonHunters","PJT":"","PJT7":""},
+      {"날짜":"2025/01/31","번호":161,"계정코드":25301,"계정과목":"미지급금(일반)","차변":null,"대변":3659040,"적요":"#조이_1월 스타일리스트 비용","거래처코드":"29033","거래처명":"DemonHunters","PJT":"","PJT7":""}
+    ]
+    ;
+    
+    this.renderJournalTable();
+  }
+
+  createWorkspaceCard(workspace) {
+    // 빈 workspace인 경우 빈 카드 표시
+    if (!workspace.title || !workspace.id) {
+    return `
+        <div class="workspace-card empty-workspace-card" 
+             data-workspace-id="" 
+             data-testid="workspace-card-empty"
+           tabindex="0">
+          <div class="workspace-card-header">
+            <div class="workspace-title empty-title">새로운 Workspace를 생성해주세요</div>
+            <div class="workspace-status empty-status">
+              <i class="fas fa-plus"></i>
+              대기중
+          </div>
+        </div>
+        
+          <div class="workspace-footer">
+            <span class="workspace-created empty-created">생성일: -</span>
+            <button class="workspace-action empty-action" disabled>생성 필요</button>
+          </div>
+          </div>
+      `;
+    }
+    
+    const createdAt = new Date(workspace.createdAt).toLocaleDateString('ko-KR');
+    const statusText = workspace.status === 'active' ? '진행중' : '완료';
+    const statusClass = workspace.status === 'active' ? 'active' : 'completed';
     
     return `
-      <div class="worklog-card ${isSelected ? 'selected' : ''}" 
-           data-worklog-id="${worklog.id}" 
-           data-testid="worklog-card"
+      <div class="workspace-card" 
+           data-workspace-id="${workspace.id}" 
+           data-testid="workspace-card"
            tabindex="0">
-        <div class="worklog-card-header">
-          <div>
-            <div class="worklog-title">${worklog.title}</div>
-            <div class="worklog-period">${worklog.period.from} ~ ${worklog.period.to}</div>
-          </div>
-          <input type="checkbox" class="worklog-checkbox" ${isSelected ? 'checked' : ''} />
-        </div>
-        
-        <div class="worklog-stats">
-          <div class="stat-item">
-            <span class="stat-value">${worklog.uploadCount}</span>
-            <span class="stat-label">업로드</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-value">${worklog.journalCount}</span>
-            <span class="stat-label">분개</span>
+        <div class="workspace-card-header">
+          <div class="workspace-title">${workspace.title}</div>
+          <div class="workspace-status ${statusClass}">
+            <i class="fas fa-${workspace.status === 'active' ? 'play' : 'check'}"></i>
+            ${statusText}
           </div>
         </div>
         
-        <div class="worklog-footer">
-          <span class="worklog-updated">${updatedDate}</span>
-          <button class="worklog-action">열기</button>
+        <div class="workspace-footer">
+          <span class="workspace-created">생성일: ${createdAt}</span>
+          <button class="workspace-action" onclick="openWorkspace('${workspace.id}', '${workspace.title}')">열기</button>
         </div>
       </div>
     `;
   }
 
-  attachWorklogCardListeners() {
-    document.querySelectorAll('.worklog-card').forEach(card => {
-      const worklogId = card.dataset.worklogId;
-      const checkbox = card.querySelector('.worklog-checkbox');
-      const actionBtn = card.querySelector('.worklog-action');
+  attachWorkspaceCardListeners() {
+    document.querySelectorAll('.workspace-card').forEach(card => {
+      const workspaceId = card.dataset.workspaceId;
+      const workspaceTitle = card.querySelector('.workspace-title').textContent;
+      const actionBtn = card.querySelector('.workspace-action');
+
+      // 빈 카드인 경우 이벤트 리스너 추가하지 않음
+      if (!workspaceId || !workspaceTitle || workspaceTitle === '새로운 Workspace를 생성해주세요') {
+        return;
+      }
 
       // 카드 클릭
       card.addEventListener('click', (e) => {
-        if (e.target.type !== 'checkbox' && !e.target.classList.contains('worklog-action')) {
-          this.toggleWorklogSelection(worklogId, !this.selectedWorklogs.has(worklogId));
+        if (!e.target.classList.contains('workspace-action')) {
+          this.openWorkspace(workspaceId, workspaceTitle);
         }
-      });
-
-      // 체크박스 변경
-      checkbox.addEventListener('change', (e) => {
-        e.stopPropagation();
-        this.toggleWorklogSelection(worklogId, e.target.checked);
       });
 
       // 열기 버튼
       actionBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.toggleWorklogSelection(worklogId, true);
+        this.openWorkspace(workspaceId, workspaceTitle);
       });
 
       // 키보드 접근성
       card.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          this.toggleWorklogSelection(worklogId, !this.selectedWorklogs.has(worklogId));
+          this.openWorkspace(workspaceId, workspaceTitle);
         }
       });
     });
   }
 
-  toggleWorklogSelection(worklogId, selected) {
-    if (selected) {
-      this.selectedWorklogs.add(worklogId);
-    } else {
-      this.selectedWorklogs.delete(worklogId);
-    }
 
-    this.updateWorklogCards();
-    this.updateSelectionInfo();
-    this.loadJournals();
-    this.updateURL();
-  }
 
-  updateWorklogCards() {
-    document.querySelectorAll('.worklog-card').forEach(card => {
-      const worklogId = card.dataset.worklogId;
-      const isSelected = this.selectedWorklogs.has(worklogId);
-      
-      card.classList.toggle('selected', isSelected);
-      const checkbox = card.querySelector('.worklog-checkbox');
-      if (checkbox) checkbox.checked = isSelected;
-    });
-  }
-
-  updateSelectionInfo() {
-    const selectionInfo = document.getElementById('selection-info');
-    const selectionBadge = document.querySelector('[data-testid="selection-badge"]');
-    
-    if (this.selectedWorklogs.size > 0) {
-      selectionInfo.style.display = 'block';
-      selectionBadge.textContent = `${this.selectedWorklogs.size}개 선택됨`;
-    } else {
-      selectionInfo.style.display = 'none';
-    }
-  }
-
-  async loadJournals() {
-    if (this.selectedWorklogs.size === 0) {
-      this.showEmptyJournalState();
-      return;
-    }
-
-    try {
-      // Mock API 호출 - 실제로는 GET /journals?worklog_ids=a,b,c
-      const mockJournals = [
-        {
-          id: 'j1',
-          worklogId: 'wl_2025_w34',
-          date: '2025-08-20',
-          customer: '카페베네',
-          amount: 15000,
-          type: '지출',
-          account: '복리후생비',
-          artist: '김아티스트',
-          memo: '직원 간식',
-          sourceFile: 'receipt_001.jpg'
-        },
-        {
-          id: 'j2', 
-          worklogId: 'wl_2025_w34',
-          date: '2025-08-21',
-          customer: '서울택시',
-          amount: 8500,
-          type: '지출',
-          account: '차량비',
-          artist: '이아티스트',
-          memo: '업무용 택시',
-          sourceFile: 'receipt_002.jpg'
-        },
-        {
-          id: 'j3',
-          worklogId: 'wl_2025_w33',
-          date: '2025-08-15',
-          customer: '스타벅스',
-          amount: 12000,
-          type: '지출',
-          account: '복리후생비',
-          artist: '박아티스트',
-          memo: '회의용 음료',
-          sourceFile: 'receipt_003.jpg'
-        }
-      ];
-
-      this.journals = mockJournals.filter(j => this.selectedWorklogs.has(j.worklogId));
-      this.renderJournalTable();
-      this.renderSelectedWorklogBadges();
-      
-    } catch (error) {
-      console.error('Journal 로딩 실패:', error);
-      window.toast.show('error', '로딩 실패', '분개 데이터를 불러오지 못했습니다.');
-    }
-  }
-
-  renderSelectedWorklogBadges() {
-    const container = document.getElementById('selected-worklogs');
-    const selectedWorklogData = this.worklogs.filter(w => this.selectedWorklogs.has(w.id));
-    
-    container.innerHTML = selectedWorklogData.map(worklog => `
-      <div class="worklog-badge">
-        <span>${worklog.title}</span>
-        <span class="worklog-badge-close" data-worklog-id="${worklog.id}">×</span>
-      </div>
-    `).join('');
-
-    // 뱃지 닫기 이벤트
-    container.querySelectorAll('.worklog-badge-close').forEach(closeBtn => {
-      closeBtn.addEventListener('click', () => {
-        const worklogId = closeBtn.dataset.worklogId;
-        this.toggleWorklogSelection(worklogId, false);
-      });
-    });
-  }
-
+  // 분개 테이블 렌더링
   renderJournalTable() {
-    const container = document.getElementById('journal-table-container');
-    const summary = document.getElementById('journal-summary');
-    const controls = document.getElementById('journal-controls');
-    const empty = document.getElementById('journal-empty');
+    const tbody = document.getElementById('journal-rows');
+    if (!tbody) return;
+
+    // 20줄까지만 표시
+    const visibleJournals = this.journals.slice(0, 20);
     
-    if (this.journals.length === 0) {
-      this.showEmptyJournalState();
-      return;
+    tbody.innerHTML = visibleJournals.map(journal => this.createJournalRow(journal)).join('');
+    
+    // 20줄 이상인 경우 스크롤 안내 메시지 추가
+    if (this.journals.length > 20) {
+      const infoRow = document.createElement('tr');
+      infoRow.className = 'scroll-info-row';
+      infoRow.innerHTML = `
+        <td colspan="11" style="text-align: center; padding: 1rem; color: var(--text-muted); font-style: italic; background: var(--background-light);">
+          아래로 스크롤하여 더 많은 데이터를 확인하세요 (총 ${this.journals.length}건)
+        </td>
+      `;
+      tbody.appendChild(infoRow);
     }
-
-    // 테이블 표시
-    container.style.display = 'block';
-    summary.style.display = 'flex';
-    controls.style.display = 'block';
-    empty.style.display = 'none';
-
-    // 테이블 내용 렌더링
-    const tbody = document.getElementById('journal-agg-tbody');
-    tbody.innerHTML = this.journals.map(journal => this.createJournalRow(journal)).join('');
-
-    // 합계 업데이트
-    this.updateJournalSummary();
-    
-    // 컬럼 표시/숨김 적용
-    this.applyColumnVisibility();
   }
 
+  // 분개 행 생성
   createJournalRow(journal) {
+    const formatAmount = (amount) => {
+      if (amount === null || amount === undefined) return '-';
+      return amount.toLocaleString();
+    };
+
     return `
-      <tr data-journal-id="${journal.id}">
-        <td data-column="date">${journal.date}</td>
-        <td data-column="customer">${journal.customer}</td>
-        <td data-column="amount">₩${journal.amount.toLocaleString()}</td>
-        <td data-column="type">${journal.type}</td>
-        <td data-column="account">${journal.account}</td>
-        <td data-column="artist">${journal.artist || '-'}</td>
-        <td data-column="memo">${journal.memo || '-'}</td>
-        <td data-column="source">${journal.sourceFile}</td>
+      <tr>
+        <td>${journal.날짜 || '-'}</td>
+        <td>${journal.번호 || '-'}</td>
+        <td>${journal.계정코드 || '-'}</td>
+        <td>${journal.계정과목 || '-'}</td>
+        <td>${formatAmount(journal.차변)}</td>
+        <td>${formatAmount(journal.대변)}</td>
+        <td>${journal.적요 || '-'}</td>
+        <td>${journal.거래처코드 || '-'}</td>
+        <td>${journal.거래처명 || '-'}</td>
+        <td>${journal.PJT || '-'}</td>
+        <td>${journal.PJT7 || '-'}</td>
       </tr>
     `;
   }
 
-  updateJournalSummary() {
-    const totalCount = this.journals.length;
-    const totalAmount = this.journals.reduce((sum, j) => sum + j.amount, 0);
-    
-    document.getElementById('total-count').textContent = totalCount;
-    document.getElementById('total-amount').textContent = `₩${totalAmount.toLocaleString()}`;
-  }
-
-  showEmptyJournalState() {
-    document.getElementById('journal-table-container').style.display = 'none';
-    document.getElementById('journal-summary').style.display = 'none';
-    document.getElementById('journal-controls').style.display = 'none';
-    document.getElementById('journal-empty').style.display = 'block';
-  }
-
-  toggleColumn(column, visible) {
-    if (visible) {
-      this.visibleColumns.add(column);
-    } else {
-      this.visibleColumns.delete(column);
+  // Workspace 관련 메서드들
+  openWorkspace(workspaceId, workspaceTitle) {
+    try {
+      // Workspace 페이지로 이동 (제목을 URL 파라미터로 전달)
+      const encodedTitle = encodeURIComponent(workspaceTitle);
+      window.location.href = `../workspace/workspace.html?id=${workspaceId}&title=${encodedTitle}`;
+    } catch (error) {
+      console.error('Workspace 열기 실패:', error);
+      alert('Workspace 열기에 실패했습니다. 다시 시도해주세요.');
     }
-    this.applyColumnVisibility();
   }
 
-  applyColumnVisibility() {
-    document.querySelectorAll('[data-column]').forEach(cell => {
-      const column = cell.dataset.column;
-      cell.style.display = this.visibleColumns.has(column) ? '' : 'none';
-    });
-  }
 
-  toggleColumnDropdown() {
-    const dropdown = document.querySelector('.dropdown');
-    dropdown.classList.toggle('active');
-  }
 
-  downloadCSV() {
-    const headers = Array.from(this.visibleColumns).map(col => {
-      const columnMap = {
-        date: '발생일',
-        customer: '거래처',
-        amount: '금액',
-        type: '유형',
-        account: '계정과목',
-        artist: '아티스트',
-        memo: '메모',
-        source: '출처'
-      };
-      return columnMap[col] || col;
-    });
+  updateControlButtons() {
+    // 3개만 있으므로 더보기/접기 버튼 숨김
+    const expandBtn = document.getElementById('expand-workspaces');
+    const collapseBtn = document.getElementById('collapse-workspaces');
     
-    const rows = this.journals.map(journal => 
-      Array.from(this.visibleColumns).map(col => {
-        let value = journal[col] || '-';
-        if (col === 'amount') {
-          value = journal.amount;
-        }
-        return value;
-      }).join(',')
+    if (expandBtn) expandBtn.style.display = 'none';
+    if (collapseBtn) collapseBtn.style.display = 'none';
+  }
+
+  applyWorkspaceFilters() {
+    const searchValue = document.getElementById('workspace-search').value.toLowerCase();
+    
+    if (!searchValue) {
+      this.renderWorkspaceGrid();
+      return;
+    }
+
+    const filteredWorkspaces = this.workspaces.filter(workspace => 
+      workspace.title.toLowerCase().includes(searchValue)
     );
+
+    const grid = document.getElementById('workspace-grid');
+    const empty = document.getElementById('workspace-empty');
     
-    const csv = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `journal_export_${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    window.toast.show('success', 'CSV 다운로드', '파일이 성공적으로 다운로드되었습니다.');
-  }
-
-  downloadExcel() {
-    // CSV 다운로드로 대체 (실제 구현에서는 Excel 라이브러리 사용)
-    this.downloadCSV();
-  }
-
-  applyFilters() {
-    // 필터링 로직 (실제 구현에서는 API 호출)
-    const searchValue = document.getElementById('worklog-search').value.toLowerCase();
-    const dateFrom = document.getElementById('date-from').value;
-    const dateTo = document.getElementById('date-to').value;
-    const sortOption = document.getElementById('sort-option').value;
-
-    let filteredWorklogs = [...this.worklogs];
-
-    // 검색 필터
-    if (searchValue) {
-      filteredWorklogs = filteredWorklogs.filter(worklog => 
-        worklog.title.toLowerCase().includes(searchValue)
-      );
-    }
-
-    // 날짜 필터
-    if (dateFrom) {
-      filteredWorklogs = filteredWorklogs.filter(worklog => 
-        worklog.period.from >= dateFrom
-      );
-    }
-    if (dateTo) {
-      filteredWorklogs = filteredWorklogs.filter(worklog => 
-        worklog.period.to <= dateTo
-      );
-    }
-
-    // 정렬
-    switch (sortOption) {
-      case 'uploads':
-        filteredWorklogs.sort((a, b) => b.uploadCount - a.uploadCount);
-        break;
-      case 'journals':
-        filteredWorklogs.sort((a, b) => b.journalCount - a.journalCount);
-        break;
-      case 'recent':
-      default:
-        filteredWorklogs.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-        break;
-    }
-
-    // 임시로 필터된 결과를 렌더링
-    const grid = document.getElementById('worklog-grid');
-    const empty = document.getElementById('worklog-empty');
-    
-    if (filteredWorklogs.length === 0) {
+    if (filteredWorkspaces.length === 0) {
       grid.style.display = 'none';
       empty.style.display = 'block';
       empty.querySelector('h3').textContent = '검색 결과가 없습니다';
@@ -514,39 +382,253 @@ class DashboardManager {
     } else {
       grid.style.display = 'grid';
       empty.style.display = 'none';
-      grid.innerHTML = filteredWorklogs.map(worklog => this.createWorklogCard(worklog)).join('');
-      this.attachWorklogCardListeners();
+      
+      // 검색 결과는 모두 표시
+      grid.innerHTML = filteredWorkspaces.map(workspace => this.createWorkspaceCard(workspace)).join('');
+      this.attachWorkspaceCardListeners();
     }
   }
 
-  updateURL() {
-    const url = new URL(window.location);
-    if (this.selectedWorklogs.size > 0) {
-      url.searchParams.set('worklogIds', Array.from(this.selectedWorklogs).join(','));
-    } else {
-      url.searchParams.delete('worklogIds');
-    }
-    
-    window.history.replaceState({}, '', url);
-  }
 
-  updateFromURL() {
-    const url = new URL(window.location);
-    const worklogIds = url.searchParams.get('worklogIds');
-    
-    if (worklogIds) {
-      this.selectedWorklogs = new Set(worklogIds.split(','));
-      this.updateWorklogCards();
-      this.updateSelectionInfo();
-      this.loadJournals();
-    }
-  }
+
+
+
+
 
   showEmptyState(type) {
-    if (type === 'worklog') {
-      document.getElementById('worklog-grid').style.display = 'none';
-      document.getElementById('worklog-empty').style.display = 'block';
+    if (type === 'workspace') {
+      document.getElementById('workspace-grid').style.display = 'none';
+      document.getElementById('workspace-empty').style.display = 'block';
     }
+  }
+
+  // Workspace 모달 관련 메서드들
+  showWorkspaceModal() {
+    const modal = document.getElementById('workspace-modal');
+    const input = document.getElementById('workspace-title-input');
+    
+    if (modal && input) {
+      modal.style.display = 'flex';
+      modal.setAttribute('aria-hidden', 'false');
+      input.focus();
+      
+      // 이벤트 리스너 설정
+      this.setupWorkspaceModalListeners();
+    }
+  }
+
+  closeWorkspaceModal() {
+    const modal = document.getElementById('workspace-modal');
+    const input = document.getElementById('workspace-title-input');
+    
+    if (modal && input) {
+      modal.style.display = 'none';
+      modal.setAttribute('aria-hidden', 'true');
+      input.value = '';
+    }
+  }
+
+  setupWorkspaceModalListeners() {
+    const modal = document.getElementById('workspace-modal');
+    const confirmBtn = document.getElementById('workspace-confirm');
+    const cancelBtn = document.getElementById('workspace-cancel');
+    const input = document.getElementById('workspace-title-input');
+
+    if (!modal || !confirmBtn || !cancelBtn || !input) return;
+
+    // 확인 버튼 클릭
+    const handleConfirm = () => {
+      const title = input.value.trim();
+      if (!title) {
+        alert('Workspace 제목을 입력해주세요.');
+        input.focus();
+        return;
+      }
+      
+      // Workspace 생성 및 페이지 이동
+      this.createWorkspace(title);
+    };
+
+    // 취소 버튼 클릭
+    const handleCancel = () => {
+      this.closeWorkspaceModal();
+    };
+
+    // Enter 키 입력
+    const handleKeyPress = (e) => {
+      if (e.key === 'Enter') {
+        handleConfirm();
+      } else if (e.key === 'Escape') {
+        handleCancel();
+      }
+    };
+
+    // 이벤트 리스너 등록
+    confirmBtn.addEventListener('click', handleConfirm);
+    cancelBtn.addEventListener('click', handleCancel);
+    input.addEventListener('keydown', handleKeyPress);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        handleCancel();
+      }
+    });
+
+    // 한 번만 실행되도록 이벤트 리스너 제거
+    confirmBtn.removeEventListener('click', handleConfirm);
+    cancelBtn.removeEventListener('click', handleCancel);
+    input.removeEventListener('keydown', handleKeyPress);
+    modal.removeEventListener('click', (e) => {
+      if (e.target === modal) {
+        handleCancel();
+      }
+    });
+
+    // 다시 등록
+    confirmBtn.addEventListener('click', handleConfirm);
+    cancelBtn.addEventListener('click', handleCancel);
+    input.addEventListener('keydown', handleKeyPress);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        handleCancel();
+      }
+    });
+  }
+
+  async createWorkspace(title) {
+    try {
+      // TODO: 실제 API 호출로 Workspace 생성
+      // const response = await fetch('/api/workspaces', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ title })
+      // });
+      
+      // 새 Workspace 생성
+      const workspace = {
+        id: `ws_${Date.now()}`,
+        title: title,
+        status: 'active',
+        uploadCount: 0,
+        journalCount: 0,
+        lastActivity: new Date().toISOString(),
+        createdAt: new Date().toISOString()
+      };
+      
+      // 로컬 스토리지에 저장
+      const workspaces = JSON.parse(localStorage.getItem('workspaces') || '[]');
+      workspaces.unshift(workspace); // 맨 앞에 추가
+      localStorage.setItem('workspaces', JSON.stringify(workspaces));
+      
+      // 첫 번째 카드를 새로 생성된 workspace로 업데이트
+      this.workspaces[0] = workspace;
+
+      // 모달 닫기
+      this.closeWorkspaceModal();
+      
+      // Workspace 그리드 다시 렌더링
+      this.renderWorkspaceGrid();
+      
+      // Workspace 페이지로 이동 (제목을 URL 파라미터로 전달)
+      const encodedTitle = encodeURIComponent(title);
+      window.location.href = `../workspace/workspace.html?id=${workspace.id}&title=${encodedTitle}`;
+      
+    } catch (error) {
+      console.error('Workspace 생성 실패:', error);
+      alert('Workspace 생성에 실패했습니다. 다시 시도해주세요.');
+    }
+  }
+
+  // ================================================== //
+  // Workspace 펼치기/접기 기능
+  // ================================================== //
+  expandWorkspaces() {
+    this.isExpanded = true;
+    this.renderWorkspaceGrid();
+    this.updateExpandControls();
+    console.log('✅ Workspace 펼치기 완료');
+  }
+
+  collapseWorkspaces() {
+    this.isExpanded = false;
+    this.renderWorkspaceGrid();
+    this.updateExpandControls();
+    console.log('✅ Workspace 접기 완료');
+  }
+
+  updateExpandControls() {
+    const expandBtn = document.getElementById('expand-workspaces');
+    const collapseBtn = document.getElementById('collapse-workspaces');
+    
+    if (this.isExpanded) {
+      expandBtn.style.display = 'none';
+      collapseBtn.style.display = 'inline-flex';
+    } else {
+      expandBtn.style.display = 'inline-flex';
+      collapseBtn.style.display = 'none';
+    }
+  }
+
+  // ================================================== //
+  // 전표 미리보기 정렬 기능
+  // ================================================== //
+  applyJournalSort() {
+    const sortSelect = document.getElementById('sort-option');
+    if (!sortSelect || !this.journals) return;
+
+    const sortValue = sortSelect.value;
+    let sortedJournals = [...this.journals];
+
+    switch (sortValue) {
+      case 'latest':
+        // 최신 순 (날짜 기준, 내림차순)
+        sortedJournals.sort((a, b) => {
+          const dateA = new Date(a.날짜.replace(/\//g, '-'));
+          const dateB = new Date(b.날짜.replace(/\//g, '-'));
+          return dateB - dateA;
+        });
+        break;
+
+      case 'oldest':
+        // 오래된 순 (날짜 기준, 오름차순)
+        sortedJournals.sort((a, b) => {
+          const dateA = new Date(a.날짜.replace(/\//g, '-'));
+          const dateB = new Date(b.날짜.replace(/\//g, '-'));
+          return dateA - dateB;
+        });
+        break;
+
+      case 'highest':
+        // 큰 금액 순 (차변 또는 대변 중 큰 값 기준, 내림차순)
+        sortedJournals.sort((a, b) => {
+          const amountA = Math.max(a.차변 || 0, a.대변 || 0);
+          const amountB = Math.max(b.차변 || 0, b.대변 || 0);
+          return amountB - amountA;
+        });
+        break;
+
+      case 'lowest':
+        // 작은 금액 순 (차변 또는 대변 중 큰 값 기준, 오름차순)
+        sortedJournals.sort((a, b) => {
+          const amountA = Math.max(a.차변 || 0, a.대변 || 0);
+          const amountB = Math.max(b.차변 || 0, b.대변 || 0);
+          return amountA - amountB;
+        });
+        break;
+
+      default:
+        // 기본값은 최신 순
+        sortedJournals.sort((a, b) => {
+          const dateA = new Date(a.날짜.replace(/\//g, '-'));
+          const dateB = new Date(b.날짜.replace(/\//g, '-'));
+          return dateB - dateA;
+        });
+    }
+
+    // 정렬된 데이터로 테이블 다시 렌더링
+    this.journals = sortedJournals;
+    this.renderJournalTable();
+    
+    console.log(`✅ 전표 미리보기 정렬 완료: ${sortValue}`);
   }
 }
 
