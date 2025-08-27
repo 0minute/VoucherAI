@@ -338,6 +338,80 @@ def make_journal_entry(json_data: list, erp: str = 'dz') -> dict:
 
     return journal_entries
 
+
+def make_journal_line(COMPANY_NAME, voucher_data, journal_no, serial_no, now, confirmer_name, manager_name, artist_code, artist_name, dorc = "credit"):
+    
+    if dorc == "credit":
+      result = {
+          "회사코드": "001",
+          "전표번호": journal_no,
+          "전표일자": voucher_data["날짜"], #사용자 키인으로 변경
+          "작성부서": "회계팀",
+          "작성자" : "USER",
+          "적요" : make_text_for_journal(voucher_data["증빙유형"], voucher_data["날짜"], artist_name, voucher_data["거래처"], voucher_data["유형"]),
+          "회계연도": voucher_data["날짜"].split("-")[0],
+          "회계기간": voucher_data["날짜"].split("-")[1],
+          "전표유형": "SA", #더존 > 일반
+          "승인상태" : "미결",
+          "자동기표여부" : "N",
+          "입력일시" : now,
+          "라인번호" : serial_no, #UNIQUE ID로 수정
+          "계정코드" : AP_ACCOUNT_CODE,
+          "계정과목명" : AP_ACCOUNT_NAME,
+          "차변/대변구분" : "대변",
+          "금액(원화)" : voucher_data["금액"],
+          "금액(외화)" : voucher_data["금액"],
+          "차변" : 0,
+          "대변" : voucher_data["금액"],
+          "거래처코드" : voucher_data["거래처코드"],
+          "거래처명" : voucher_data["거래처"],
+          "부서코드" : "KDH001", # 추후 입력받아야함
+          "프로젝트코드" : artist_code,
+          "관리항목1" : None,
+          "관리항목2" : None,
+          "사업자등록번호" :  voucher_data["사업자등록번호"],
+          "증빙일" : voucher_data["날짜"],
+          "참조번호" : voucher_data["참조번호"],
+          "손익센터" : None,
+          "개별아이템텍스트" : make_text_for_journal(voucher_data["증빙유형"], voucher_data["날짜"], artist_name, voucher_data["거래처"], voucher_data["유형"])
+      }
+
+    elif dorc == "debit":
+      result = {
+          "회사코드": "001",
+          "전표번호": journal_no,
+          "전표일자": voucher_data["날짜"], #사용자 키인으로 변경
+          "작성부서": "회계팀",
+          "작성자" : "USER",
+          "적요" : make_text_for_journal(voucher_data["증빙유형"], voucher_data["날짜"], artist_name, voucher_data["거래처"], voucher_data["유형"]),
+          "회계연도": voucher_data["날짜"].split("-")[0],
+          "회계기간": voucher_data["날짜"].split("-")[1],
+          "전표유형": "SA", #더존 > 일반
+          "승인상태" : "미결",
+          "자동기표여부" : "N",
+          "입력일시" : now,
+          "라인번호" : serial_no, #UNIQUE ID로 수정
+          "계정코드" : AP_ACCOUNT_CODE,
+          "계정과목명" : AP_ACCOUNT_NAME,
+          "차변/대변구분" : "대변",
+          "금액(원화)" : voucher_data["금액"],
+          "금액(외화)" : voucher_data["금액"],
+          "차변" : 0,
+          "대변" : voucher_data["금액"],
+          "거래처코드" : voucher_data["거래처코드"],
+          "거래처명" : voucher_data["거래처"],
+          "부서코드" : "KDH001", # 추후 입력받아야함
+          "프로젝트코드" : artist_code,
+          "관리항목1" : None,
+          "관리항목2" : None,
+          "사업자등록번호" :  voucher_data["사업자등록번호"],
+          "증빙일" : voucher_data["날짜"],
+          "참조번호" : voucher_data["참조번호"],
+          "손익센터" : None,
+          "개별아이템텍스트" : make_text_for_journal(voucher_data["증빙유형"], voucher_data["날짜"], artist_name, voucher_data["거래처"], voucher_data["유형"])
+      }
+    return result
+      
 def _round_krw(x: Decimal) -> int:
     # 원화 정수 금액 반올림 (ROUND_HALF_UP)
     return int(x.quantize(Decimal('1'), rounding=ROUND_HALF_UP))
