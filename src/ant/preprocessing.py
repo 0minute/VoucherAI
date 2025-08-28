@@ -12,6 +12,7 @@ import re
 from loguru import logger
 from src.utils.constants import VENDOR_TABLE_PATH
 import json
+from src.api.upload import _normalize_rel
 
 def _is_amount_token(s: str) -> bool:
     """
@@ -263,5 +264,5 @@ def add_vendor_code(data: Dict[str, Any]) -> None:
     return data
 
 def add_file_id(data: Dict[str, Any], file_path: str) -> None:
-    data["file_id"] = file_path
+    data["file_id"] = _normalize_rel(file_path)
     return data

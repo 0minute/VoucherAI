@@ -14,7 +14,7 @@
     "금액": [
         {
             "value": "1452000",
-            "source_id": "p0_00019"
+            "source_id": "p0_00023"
         }
     ],
     "유형": [
@@ -46,5 +46,5 @@
     "프로젝트명": null,
     "거래처코드": "10001",
     "거래처명": "HUNTRIX한의원",
-    "file_id": "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\wshopp\\input_files\\HUNTRIX.png"
+    "file_id": "workspace/wshopp/input_files/HUNTRIX.png"
 }

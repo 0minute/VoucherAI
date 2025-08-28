@@ -294,13 +294,20 @@ def list_uploaded_files(workspace_name: str) -> list[str]:
 
 # 파일 삭제 처리 함수 > 정리 필요
 
+def _normalize_rel(path: str | Path, project_root: Path = PROJECT_ROOT) -> str:
+    """PROJECT_ROOT 기준 상대경로 (POSIX 문자열)로 표준화"""
+    if isinstance(path, str):
+        path = Path(path)
 
-def _normalize_rel(path: Path) -> str:
-    """PROJECT_ROOT 기준 상대경로 문자열로 표준화"""
     try:
-        return str(path.resolve().relative_to(PROJECT_ROOT.resolve()))
+        # 절대경로화 후 PROJECT_ROOT 기준 상대경로 계산
+        rel = path.resolve().relative_to(project_root.resolve())
     except Exception:
-        return str(path.resolve())
+        # relative_to 실패하면 그냥 파일명만 사용 (fallback)
+        rel = path.name
+
+    # 항상 POSIX 스타일 문자열 반환
+    return rel.as_posix()
 
 def get_excluded_files(workspace_name: str) -> set[str]:
     sf = get_setting_file(workspace_name)

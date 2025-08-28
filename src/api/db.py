@@ -3,10 +3,16 @@ import json
 import tempfile
 import os
 from src.api.utils import _atomic_write_json, _now_iso, _read_json
+from src.api.upload import _normalize_rel
 
-def initialize_voucher_data(workspace_name: str) -> None:
+def initialize_voucher_data(workspace_name: str, reset: bool = False) -> None:
     p = get_voucher_db_path(workspace_name)
     if not p.exists():
+        p.parent.mkdir(parents=True, exist_ok=True)
+        base = {}
+        _atomic_write_json(p, base)
+    elif reset:
+        p.unlink()
         p.parent.mkdir(parents=True, exist_ok=True)
         base = {}
         _atomic_write_json(p, base)
@@ -14,7 +20,7 @@ def initialize_voucher_data(workspace_name: str) -> None:
 def update_voucher_data(workspace_name: str, file_id: str, edits: dict) -> None:
     try:
         voucher_data_ds = read_voucher_data(workspace_name)
-        voucher_data_ds[file_id] = edits
+        voucher_data_ds[_normalize_rel(file_id)] = edits
         write_voucher_data(workspace_name, voucher_data_ds)
         return True, None
     except Exception as e:

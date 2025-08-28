@@ -1,0 +1,92 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Visualization Preview Test</title>
+<style>
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto; margin: 24px; }
+  .row { margin-bottom: 12px; }
+  label { display:inline-block; width: 160px; }
+  img { max-width: 720px; border: 1px solid #ddd; padding: 8px; border-radius: 8px; }
+  #error { color: #c00; white-space: pre-wrap; }
+</style>
+
+<div class="row">
+  <label>Backend Base URL</label>
+  <input id="baseUrl" value="http://localhost:8000" style="width:420px">
+</div>
+<div class="row">
+  <label>workspaceName</label>
+  <input id="ws" value="wshopp" style="width:420px">
+</div>
+<div class="row">
+  <label>fileId (상대경로 또는 파일명)</label>
+  <input id="fileId" value="HUNTRIX.png" style="width:420px">
+</div>
+<div class="row">
+  <button id="btn">불러오기</button>
+</div>
+<div class="row">
+  <div id="error"></div>
+</div>
+<div class="row">
+  <img id="preview" alt="(이미지 미리보기)" />
+</div>
+
+<script>
+  // 필요 시 토큰이 있으면 여기에 설정 (예: const token = "Bearer xxx";)
+  const token = null;
+
+  document.getElementById('btn').addEventListener('click', async () => {
+    const baseUrl = document.getElementById('baseUrl').value.replace(/\/+$/,'');
+    const ws = document.getElementById('ws').value.trim();
+    const fileIdRaw = document.getElementById('fileId').value.trim();
+
+    // fileId는 라우트에 들어가므로 path-safe 인코딩 필요
+    // 콜론/백슬래시 포함 가능성이 있으면 encodeURIComponent로 전체를 감싸면 안전
+    const fileIdEncoded = encodeURIComponent(fileIdRaw);
+
+    const url = `${baseUrl}/workspaces/${encodeURIComponent(ws)}/visualizations/${fileIdEncoded}`;
+    const errorEl = document.getElementById('error');
+    const imgEl = document.getElementById('preview');
+    errorEl.textContent = '';
+    imgEl.src = '';
+
+    try {
+      const resp = await fetch(url, {
+        headers: token ? { 'Authorization': token } : {}
+      });
+      const json = await resp.json();
+
+      if (!json.ok) {
+        errorEl.textContent = `오류: ${json.error || 'unknown error'}`;
+        return;
+      }
+
+      const imageUrl = json.data?.imageUrl;
+      if (!imageUrl) {
+        errorEl.textContent = 'imageUrl이 응답에 없습니다.';
+        return;
+      }
+
+      // 1) 공개/static URL이면 바로 <img src>에 주입
+      if (/^https?:\/\//i.test(imageUrl) || imageUrl.startsWith('/')) {
+        // 토큰이 필요한 보호 엔드포인트라면 <img>로 바로 넣으면 헤더가 안 붙습니다.
+        if (token && !imageUrl.startsWith('/static')) {
+          // 보호 엔드포인트 → fetch로 blob 받고 createObjectURL 사용
+          const imgResp = await fetch(imageUrl, { headers: { 'Authorization': token } });
+          if (!imgResp.ok) throw new Error(`이미지 응답 실패: ${imgResp.status}`);
+          const blob = await imgResp.blob();
+          const objUrl = URL.createObjectURL(blob);
+          imgEl.src = objUrl;
+        } else {
+          // 공개(static) 또는 쿠키세션이면 바로 사용
+          imgEl.src = imageUrl.startsWith('http') ? imageUrl : (baseUrl + imageUrl);
+        }
+      } else {
+        // 2) 혹시 fs 경로가 그대로 온 경우(설정 누락) → 미리보기 불가
+        errorEl.textContent = `imageUrl이 파일시스템 경로 같습니다. (받은 값: ${imageUrl})\n/static 마운트 또는 보호 엔드포인트로 바꿔주세요.`;
+      }
+    } catch (e) {
+      errorEl.textContent = `예외: ${e.message || e}`;
+    }
+  });
+</script>

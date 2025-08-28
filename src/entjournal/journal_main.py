@@ -14,6 +14,7 @@ import json
 from src.entjournal.constants import COLUMN_RULES_PATH
 from src.entjournal.utils import load_field_schema
 from loguru import logger
+from src.api.upload import _normalize_rel
 
 def get_json_wt_one_value_from_extract_invoice_fields(extract_invoice_fields_results):
     """
@@ -204,7 +205,7 @@ def make_journal_entry(json_data: list, erp: str = 'dz') -> dict:
 
     # 추출 데이터 별로 순환
     # 컬럼 규칙 적용
-    json_data = map_artist_name_with_column_rules_to_json(json_data)
+    # json_data = map_artist_name_with_column_rules_to_json(json_data)
     # Dummy
     # ------------------------------------------------------------
     biz_reg_no_to_Vender_Code = {"11111":"삼일회계법인"}
@@ -215,6 +216,8 @@ def make_journal_entry(json_data: list, erp: str = 'dz') -> dict:
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     journal_entries = []
     line_number = 1
+    if isinstance(json_data, dict):
+        json_data = [json_data]
     for journal_no, voucher_data in enumerate(json_data):
         file_id = voucher_data["file_id"]
         #대변 생성
@@ -303,7 +306,7 @@ def make_journal_line(voucher_data, journal_no, line_number, now, artist_code, a
           "참조번호" : None, #voucher_data["참조번호"]
           "손익센터" : None,
           "개별아이템텍스트" : make_text_for_journal(voucher_data["증빙유형"], voucher_data["날짜"], artist_name, voucher_data["거래처"], voucher_data["유형"]),
-          "file_id" : file_id
+          "file_id" : _normalize_rel(file_id)
         
       }
 
@@ -340,7 +343,7 @@ def make_journal_line(voucher_data, journal_no, line_number, now, artist_code, a
           "참조번호" : None,#voucher_data["참조번호"],
           "손익센터" : None,
           "개별아이템텍스트" : make_text_for_journal(voucher_data["증빙유형"], voucher_data["날짜"], artist_name, voucher_data["거래처"], voucher_data["유형"]),
-          "file_id" : file_id
+          "file_id" : _normalize_rel(file_id)
       }
     return result
       

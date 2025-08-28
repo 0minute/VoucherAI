@@ -2,7 +2,7 @@
     "날짜": [
         {
             "value": "25/08/11",
-            "source_id": "p0_00009"
+            "source_id": null
         }
     ],
     "거래처": [
@@ -44,5 +44,5 @@
     "계정과목": "복리후생비_식대",
     "계정코드": 51103,
     "프로젝트명": null,
-    "file_id": "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\wshopp\\input_files\\R-1.png"
+    "file_id": "workspace/wshopp/input_files/R-1.png"
 }

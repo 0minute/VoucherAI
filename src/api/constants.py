@@ -6,7 +6,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent  # project_root/ ê¸
 # === Top-level directories ===
 WORKSPACE_ROOT = PROJECT_ROOT / "workspace"
 ARCHIVE_ROOT = PROJECT_ROOT / "archive"
-DB_ROOT = PROJECT_ROOT / "central_db"
+DB_ROOT = WORKSPACE_ROOT / "central_db"
 
 # === Default subfolder names ===
 INPUT_FOLDER = "input_files"
