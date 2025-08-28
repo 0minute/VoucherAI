@@ -356,7 +356,8 @@ def _read_uploads_index(workspace_name: str) -> dict:
     return json.loads(p.read_text(encoding="utf-8"))
 
 def get_uploaded_files_path(workspace_name: str) -> list[str]:
-    uploads_index = get_uploads_index_path(workspace_name)
+    # uploads_index = get_uploads_index_path(workspace_name)
+    uploads_index = _read_uploads_index(workspace_name)
     uploaded_files = uploads_index.get("files", [])
     return [os.path.join(PROJECT_ROOT, file.get("rel")) for file in uploaded_files]
 

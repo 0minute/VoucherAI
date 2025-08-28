@@ -31,7 +31,8 @@ import json
 import os
 
 from typing import Optional, List, Dict, Any
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Path as ApiPath
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Body
+from fastapi import Path as ApiPath
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -80,12 +81,12 @@ def get_workspace_tmpdir(workspace_name: str) -> Path:
 # ====== Pydantic 모델 (JS와 계약) ======
 class CreateWorkspaceBody(BaseModel):
     workspaceName: str = Field(min_length=1)
-    periodStart: str = Field(description="YYYY-MM-DD")
-    periodEnd: str = Field(description="YYYY-MM-DD")
+    # periodStart: str = Field(description="YYYY-MM-DD")
+    # periodEnd: str = Field(description="YYYY-MM-DD")
 
-class UpdatePeriodBody(BaseModel):
-    periodStart: str
-    periodEnd: str
+# class UpdatePeriodBody(BaseModel):
+#     periodStart: str
+#     periodEnd: str
 
 class RenameBody(BaseModel):
     newName: str = Field(min_length=1)
@@ -120,24 +121,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/ping")
-def ping():
-    return {"ok": True, "msg": "pong"}
-
 # A-1. 워크스페이스 생성
 @app.post("/workspaces", response_model=ApiResponse, status_code=201)
 def create_workspace(body: CreateWorkspaceBody):
     try:
         ensure_workspace(body.workspaceName)
-        set_target_period(body.workspaceName, body.periodStart, body.periodEnd)
+        # set_target_period(body.workspaceName)
         return ApiResponse(
             ok=True,
             data={
                 "workspaceName": body.workspaceName,
-                "period": {
-                    "periodStart": body.periodStart,
-                    "periodEnd": body.periodEnd
-                }
             },
             error=None,
             ts=_now_iso()
@@ -173,25 +166,25 @@ def get_workspaces():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# A-4. 워크스페이스 기간 수정
-@app.patch("/workspaces/{workspaceName}/period", response_model=ApiResponse)
-def update_workspace_period(workspaceName: str, body: UpdatePeriodBody):
-    try:
-        set_target_period(workspaceName, body.periodStart, body.periodEnd)
-        return ApiResponse(
-            ok=True,
-            data={
-                "workspaceName": workspaceName,
-                "period": {
-                    "periodStart": body.periodStart,
-                    "periodEnd": body.periodEnd
-                }
-            },
-            error=None,
-            ts=_now_iso()
-        )
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+# # A-4. 워크스페이스 기간 수정
+# @app.patch("/workspaces/{workspaceName}/period", response_model=ApiResponse)
+# def update_workspace_period(workspaceName: str, body: UpdatePeriodBody):
+#     try:
+#         set_target_period(workspaceName, body.periodStart, body.periodEnd)
+#         return ApiResponse(
+#             ok=True,
+#             data={
+#                 "workspaceName": workspaceName,
+#                 "period": {
+#                     "periodStart": body.periodStart,
+#                     "periodEnd": body.periodEnd
+#                 }
+#             },
+#             error=None,
+#             ts=_now_iso()
+#         )
+#     except Exception as e:
+#         raise HTTPException(status_code=400, detail=str(e))
 
 # A-5. 워크스페이스 이름 변경
 @app.patch("/workspaces/{oldName}", response_model=ApiResponse)
@@ -694,9 +687,9 @@ def run_ocr_and_journal(workspaceName: str):
             data_dict = get_json_wt_one_value_from_extract_invoice_fields(data)
             data_dict = [data_dict]
             data_dict = drop_source_id_from_json(data_dict)
-            result_dict = make_journal_entry(data_dict)
-            record_list = make_journal_entry_to_record_list(result_dict, os.path.basename(file))
-            journal_entry_l.append(record_list)
+            record_list = make_journal_entry(data_dict)
+            # record_list = make_journal_entry_to_record_list(result_dict, os.path.basename(file))
+            journal_entry_l.extend(record_list)
 
         # 상태 반영
         add_ocr_results(workspaceName, ocr_results_l)
@@ -721,6 +714,7 @@ def run_ocr_and_journal(workspaceName: str):
                 "llmResults": llm_results_l,
                 "journalPath": jpath,
                 "visualizations": viz_for_front,
+                "joruanl": journal_entry_l
             },
             error=None,
             ts=_now_iso()
@@ -743,7 +737,7 @@ def get_journal_drafts_api(workspaceName: str):
 
 # === 3) 특정 파일의 VoucherData 조회 ===
 @app.get("/workspaces/{workspaceName}/voucher-data/{fileId:path}", response_model=ApiResponse)
-def get_voucher_data_api(workspaceName: str, fileId: str = Path(..., description="원본 file_id (URL-encoded)")):
+def get_voucher_data_api(workspaceName: str, fileId: str = ApiPath(..., description="원본 file_id (URL-encoded)")):
     try:
         ds = read_voucher_data(workspaceName)
         vd = ds.get(fileId, {})
@@ -757,7 +751,7 @@ def get_voucher_data_api(workspaceName: str, fileId: str = Path(..., description
 @app.patch("/workspaces/{workspaceName}/voucher-data/{fileId:path}", response_model=ApiResponse)
 def patch_update_voucher_data_api(
     workspaceName: str,
-    fileId: str = Path(...),
+    fileId: str = ApiPath(...),
     body: VoucherUpdateBody = Body(...)
 ):
     try:
@@ -788,7 +782,7 @@ def refresh_journal_entries_api(workspaceName: str):
 
 # === 6) 클릭한 레코드의 시각화 이미지 경로 조회 ===
 @app.get("/workspaces/{workspaceName}/visualizations/{fileId:path}", response_model=ApiResponse)
-def get_visualization_image_path_api(workspaceName: str, fileId: str = Path(...)):
+def get_visualization_image_path_api(workspaceName: str, fileId: str = ApiPath(...)):
     try:
         settings_d = _read_setting(get_setting_file(workspaceName))
         visualization_d = settings_d.get("files", {}).get("visualization", {})
@@ -824,3 +818,6 @@ def archive_journal_entry_api(workspaceName: str):
         return ApiResponse(ok=True, data={"archivePath": central, "workspaceName": workspaceName}, error=None, ts=_now_iso())
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+if __name__ == "__main__":
+    run_ocr_and_journal("wshopp")

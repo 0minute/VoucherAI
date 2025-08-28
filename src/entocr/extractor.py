@@ -333,7 +333,7 @@ class ImageDataExtractor:
             
             logger.info(f"JSON data saved to: {output_path}")
         
-        return json_string
+        return result
 
     def batch_extract_to_json(
         self,

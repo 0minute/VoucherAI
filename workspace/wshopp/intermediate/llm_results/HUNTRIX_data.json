@@ -1,0 +1,50 @@
+{
+    "날짜": [
+        {
+            "value": "20-12-31",
+            "source_id": "p0_00011"
+        }
+    ],
+    "거래처": [
+        {
+            "value": "HUNTER피부과",
+            "source_id": null
+        }
+    ],
+    "금액": [
+        {
+            "value": "1452000",
+            "source_id": "p0_00019"
+        }
+    ],
+    "유형": [
+        "피부"
+    ],
+    "사업자등록번호": [
+        {
+            "value": "000-00-00000",
+            "source_id": "p0_00001"
+        }
+    ],
+    "대표자": [
+        {
+            "value": "OOO",
+            "source_id": null
+        }
+    ],
+    "주소": [
+        {
+            "value": "서울특별시",
+            "source_id": null
+        }
+    ],
+    "증빙유형": [
+        "세금계산서"
+    ],
+    "계정과목": "연예보조_기타",
+    "계정코드": 53899,
+    "프로젝트명": null,
+    "거래처코드": "10001",
+    "거래처명": "HUNTRIX한의원",
+    "file_id": "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\wshopp\\input_files\\HUNTRIX.png"
+}

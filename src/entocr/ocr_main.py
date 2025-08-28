@@ -17,6 +17,7 @@ from src.entocr import ImageDataExtractor
 from config.settings import settings
 from loguru import logger
 from src.utils.constants import EXTRACTED_JSON_DIR
+import datetime
 
 # 이미지 파일을 추출합니다.
 def ocr_image_and_save_json(image_path: str, output_path: str) -> None:
@@ -79,12 +80,13 @@ def ocr_image_and_save_json_by_extension(image_path: str) -> str:
             
             # OCR 처리
             extractor = ImageDataExtractor()
+            processed_time = datetime.datetime.now().isoformat()
             
             if len(converted_files) == 1:
                 # 단일 이미지 처리
-                json_result = extractor.extract_to_json(str(converted_files[0]), output_path)
+                result = extractor.extract_to_json(str(converted_files[0]), output_path)
+                return result.to_json_dict()
                 logger.info(f"Single image processed successfully: {output_path}")
-                
             else:
                 # 여러 이미지 처리 (PDF의 경우)
                 logger.info(f"Processing {len(converted_files)} images...")
@@ -106,7 +108,7 @@ def ocr_image_and_save_json_by_extension(image_path: str) -> str:
                 combined_result = {
                     "source_file": str(file_path),
                     "total_pages": len(converted_files),
-                    "processed_at": extractor._get_timestamp(),
+                    "processed_at": processed_time,
                     "pages": all_results,
                     "summary": {
                         "total_text_boxes": sum(
@@ -120,7 +122,7 @@ def ocr_image_and_save_json_by_extension(image_path: str) -> str:
                         ) / len(all_results) if all_results else 0
                     }
                 }
-                
+                    
             #     # JSON 파일로 저장
             #     import json
             #     json_result = json.dumps(combined_result, ensure_ascii=False)

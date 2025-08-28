@@ -259,7 +259,7 @@ def add_vendor_code(data: Dict[str, Any]) -> None:
     if vendor_code:
         data["거래처코드"] = vendor_code["code"]
         data["거래처명"] = vendor_code["name"]
-    logger.info(f"거래처 코드 추가 완료: {data['사업자등록번호']} -> {data['거래처코드']}")
+        logger.info(f"거래처 코드 추가 완료: {data['사업자등록번호']} -> {data['거래처코드']}")
     return data
 
 def add_file_id(data: Dict[str, Any], file_path: str) -> None:
