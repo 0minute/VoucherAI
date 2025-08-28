@@ -1,0 +1,48 @@
+{
+    "날짜": [
+        {
+            "value": "25/08/11",
+            "source_id": "p0_00009"
+        }
+    ],
+    "거래처": [
+        {
+            "value": "GS25상선센터점",
+            "source_id": null
+        }
+    ],
+    "금액": [
+        {
+            "value": "4000",
+            "source_id": "p0_00004"
+        }
+    ],
+    "유형": [
+        "식비"
+    ],
+    "사업자등록번호": [
+        {
+            "value": "871-33-00055",
+            "source_id": "p0_00000"
+        }
+    ],
+    "대표자": [
+        {
+            "value": "정미숙",
+            "source_id": null
+        }
+    ],
+    "주소": [
+        {
+            "value": "서울 성북구 보문로 189, 1층",
+            "source_id": null
+        }
+    ],
+    "증빙유형": [
+        "영수증"
+    ],
+    "계정과목": "복리후생비_식대",
+    "계정코드": 51103,
+    "프로젝트명": null,
+    "file_id": "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\wshopp\\input_files\\R-1.png"
+}

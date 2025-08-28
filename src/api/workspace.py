@@ -257,7 +257,7 @@ def delete_workspace(workspace_name: str, *, permanent: bool = False, dry_run: b
 
 # constant.py (추가)
 
-def list_workspaces(include_archived: bool = False, with_status: bool = False) -> list[dict] | list[str]:
+def list_workspaces(include_archived: bool = False, with_status: bool = True) -> list[dict] | list[str]:
     """
     워크스페이스 목록 조회
     :param include_archived: True면 archive/ 폴더까지 포함
@@ -278,15 +278,15 @@ def list_workspaces(include_archived: bool = False, with_status: bool = False) -
                 else:
                     workspaces.append(path.name)
 
-    # 2) 아카이브 포함 옵션
-    if include_archived and ARCHIVE_ROOT.exists():
-        for path in ARCHIVE_ROOT.iterdir():
-            if path.is_dir():
-                if with_status:
-                    info = _collect_workspace_info(path, archived=True)
-                    workspaces.append(info)
-                else:
-                    workspaces.append(path.name)
+    # # 2) 아카이브 포함 옵션
+    # if include_archived and ARCHIVE_ROOT.exists():
+    #     for path in ARCHIVE_ROOT.iterdir():
+    #         if path.is_dir():
+    #             if with_status:
+    #                 info = _collect_workspace_info(path, archived=True)
+    #                 workspaces.append(info)
+    #             else:
+    #                 workspaces.append(path.name)
 
     return sorted(workspaces, key=lambda x: x["workspace_name"] if with_status else x)
 
@@ -308,8 +308,8 @@ def _collect_workspace_info(path: Path, archived: bool = False) -> dict:
         try:
             data = _read_setting(setting_file)
             info["status"] = data.get("status", info["status"])
-            info["updated_at"] = data.get("updated_at")
-            info["created_at"] = data.get("created_at")
+            info["updated_at"] = data.get("updated_at").strftime("%Y-%m-%d")
+            info["created_at"] = data.get("created_at").strftime("%Y-%m-%d")
         except Exception:
             pass
     return info
@@ -381,3 +381,6 @@ def save_workspace_config(workspace_name: str, cfg: dict, *, if_match: int | Non
     cfg["updated_at"] = _now_iso()
     _atomic_write_json(p, cfg)
     return cfg
+
+if __name__ == "__main__":
+    print(list_workspaces())

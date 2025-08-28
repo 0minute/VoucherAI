@@ -6,6 +6,8 @@ import unicodedata
 import re
 from datetime import date
 from decimal import Decimal, InvalidOperation
+from typing import Optional
+from src.api.constants import WORKSPACE_ROOT
 
 def _atomic_write_json(path: Path, data: dict):
     tmp = path.with_suffix(".tmp")
@@ -51,3 +53,14 @@ def _to_decimal(v) -> Decimal:
         return v if isinstance(v, Decimal) else Decimal(str(v))
     except InvalidOperation:
         raise ValueError(f"invalid amount: {v!r}")
+
+# ===== 유틸: 파일시스템 경로를 /static URL로 변환 =====
+def fs_to_static_url(fs_path: str) -> Optional[str]:
+    """ data/workspaces/... 하위면 /static/... 로 바꿔서 브라우저가 접근 가능하게 """
+    try:
+        p = Path(fs_path).resolve()
+        root = WORKSPACE_ROOT.resolve()
+        rel = p.relative_to(root)  # ValueError 시 outside
+        return f"/static/{rel.as_posix()}"
+    except Exception:
+        return None

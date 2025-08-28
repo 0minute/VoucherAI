@@ -63,6 +63,87 @@
     <pre id="out">Logs will appear here.</pre>
   </div>
 
+  <div class="box">
+    <h2>Upload Images (POST /workspaces/{name}/uploads/images)</h2>
+    <div>
+      <input id="upimg-name" placeholder="entocr-2025" />
+    </div>
+    <div style="margin-top:8px">
+      <input id="upimg-files" type="file" multiple />
+    </div>
+    <div class="small" style="margin-top:6px">
+      allowedExt (예: .png,.jpg) / renameOnConflict / ifMatchIndexVersion
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px">
+      <input id="upimg-allowed" placeholder=".png,.jpg,.jpeg" />
+      <label style="display:flex; align-items:center; gap:6px">
+        <input id="upimg-rename" type="checkbox" checked /> renameOnConflict
+      </label>
+      <input id="upimg-ifmatch" type="number" placeholder="ifMatchIndexVersion (optional)" />
+      <button id="upimg-btn">Upload Images</button>
+    </div>
+  </div>
+  
+  <div class="box">
+    <h2>Upload ZIP (POST /workspaces/{name}/uploads/zip)</h2>
+    <div>
+      <input id="upzip-name" placeholder="entocr-2025" />
+    </div>
+    <div style="margin-top:8px">
+      <input id="upzip-file" type="file" accept=".zip" />
+    </div>
+    <div class="small" style="margin-top:6px">
+      allowedExt (예: .png,.jpg) / preserveDirs / renameOnConflict / rollbackOnFailure / ifMatchIndexVersion
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px">
+      <input id="upzip-allowed" placeholder=".png,.jpg,.jpeg" />
+      <label style="display:flex; align-items:center; gap:6px">
+        <input id="upzip-preserve" type="checkbox" checked /> preserveDirs
+      </label>
+      <label style="display:flex; align-items:center; gap:6px">
+        <input id="upzip-rename" type="checkbox" checked /> renameOnConflict
+      </label>
+      <label style="display:flex; align-items:center; gap:6px">
+        <input id="upzip-rollback" type="checkbox" checked /> rollbackOnFailure
+      </label>
+      <input id="upzip-ifmatch" type="number" placeholder="ifMatchIndexVersion (optional)" />
+      <button id="upzip-btn">Upload ZIP</button>
+    </div>
+  </div>
+  
+  <div class="box">
+    <h2>Get Uploaded Files (GET /workspaces/{name}/uploads)</h2>
+    <div style="display:flex; gap:8px; flex-wrap:wrap">
+      <input id="upls-name" placeholder="entocr-2025" />
+      <button id="upls-btn">List Uploaded</button>
+    </div>
+  </div>
+  
+  <div class="box">
+    <h2>Exclude/Include Files (PATCH /workspaces/{name}/uploads/excluded)</h2>
+    <div class="small">filePaths는 쉼표로 구분, excluded=true/false</div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px">
+      <input id="ex-name" placeholder="entocr-2025" />
+      <input id="ex-files" placeholder="a.png,b.png" />
+      <select id="ex-excluded">
+        <option value="true">true</option>
+        <option value="false">false</option>
+      </select>
+      <button id="ex-btn">Apply</button>
+    </div>
+  </div>
+  
+  <div class="box">
+    <h2>Set Project Mapping (PATCH /workspaces/{name}/uploads/projects)</h2>
+    <div class="small">JSON: {"a.png":"projA","b.png":null}</div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px">
+      <input id="pm-name" placeholder="entocr-2025" />
+      <input id="pm-json" style="min-width:420px" placeholder='{"a.png":"projA","b.png":null}' />
+      <button id="pm-btn">Apply</button>
+    </div>
+  </div>
+  
+
 <script>
 (function(){
   const $ = (id) => document.getElementById(id);
@@ -169,6 +250,103 @@
     });
   });
 })();
+
+document.addEventListener("DOMContentLoaded", () => {
+  const $ = (id) => document.getElementById(id);
+  const j = (v) => JSON.stringify(v, null, 2);
+  const out = document.getElementById("out");
+  const log = (m)=>{ console.log(m); out.textContent = (out.textContent + "\n" + m).trim(); };
+
+  function apiPath(p) {
+    const base = document.getElementById("baseUrl").value.replace(/\/+$/, "");
+    const prefix = document.getElementById("basePath").value.replace(/\/+$/, "");
+    const path = (prefix ? prefix : "") + p;
+    return `${base}${path}`;
+  }
+
+  async function apiForm(p, formData, method="POST") {
+    const url = apiPath(p);
+    log(`→ ${method} ${url} (FormData)`);
+    const res = await fetch(url, { method, body: formData });
+    const text = await res.text();
+    let payload; try { payload = JSON.parse(text); } catch { payload = text; }
+    log(`← status=${res.status}, ok=${res.ok}\n${j(payload)}`);
+    return { status: res.status, ok: res.ok, json: payload };
+  }
+  async function apiJson(p, method, bodyObj) {
+    const url = apiPath(p);
+    log(`→ ${method} ${url}\n${j(bodyObj)}`);
+    const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(bodyObj) });
+    const text = await res.text();
+    let payload; try { payload = JSON.parse(text); } catch { payload = text; }
+    log(`← status=${res.status}, ok=${res.ok}\n${j(payload)}`);
+    return { status: res.status, ok: res.ok, json: payload };
+  }
+
+  // Upload Images
+  $("upimg-btn").addEventListener("click", async () => {
+    const ws = $("upimg-name").value.trim();
+    const files = $("upimg-files").files;
+    if (!ws || !files?.length) { log("workspaceName/files required"); return; }
+    const fd = new FormData();
+    for (const f of files) fd.append("files", f, f.name);
+    const allowed = $("upimg-allowed").value.trim();
+    if (allowed) fd.append("allowedExt", allowed);
+    fd.append("renameOnConflict", $("upimg-rename").checked ? "true" : "false");
+    const ifmatch = $("upimg-ifmatch").value.trim();
+    if (ifmatch) fd.append("ifMatchIndexVersion", ifmatch);
+    await apiForm(`/workspaces/${encodeURIComponent(ws)}/uploads/images`, fd, "POST");
+  });
+
+  // Upload ZIP
+  $("upzip-btn").addEventListener("click", async () => {
+    const ws = $("upzip-name").value.trim();
+    const f = $("upzip-file").files?.[0];
+    if (!ws || !f) { log("workspaceName/zip required"); return; }
+    const fd = new FormData();
+    fd.append("file", f, f.name);
+    const allowed = $("upzip-allowed").value.trim();
+    if (allowed) fd.append("allowedExt", allowed);
+    fd.append("preserveDirs", $("upzip-preserve").checked ? "true" : "false");
+    fd.append("renameOnConflict", $("upzip-rename").checked ? "true" : "false");
+    fd.append("rollbackOnFailure", $("upzip-rollback").checked ? "true" : "false");
+    const ifmatch = $("upzip-ifmatch").value.trim();
+    if (ifmatch) fd.append("ifMatchIndexVersion", ifmatch);
+    await apiForm(`/workspaces/${encodeURIComponent(ws)}/uploads/zip`, fd, "POST");
+  });
+
+  // List Uploaded
+  $("upls-btn").addEventListener("click", async () => {
+    const ws = $("upls-name").value.trim();
+    if (!ws) { log("workspaceName required"); return; }
+    await fetch(apiPath(`/workspaces/${encodeURIComponent(ws)}/uploads`))
+      .then(r=>r.text())
+      .then(t=>{
+        let payload; try { payload = JSON.parse(t); } catch { payload = t; }
+        log(`← GET uploads\n${j(payload)}`);
+      })
+      .catch(e=>log(e?.stack||e));
+  });
+
+  // Exclude/Include
+  $("ex-btn").addEventListener("click", async () => {
+    const ws = $("ex-name").value.trim();
+    if (!ws) { log("workspaceName required"); return; }
+    const list = $("ex-files").value.split(",").map(s=>s.trim()).filter(Boolean);
+    const excluded = $("ex-excluded").value === "true";
+    await apiJson(`/workspaces/${encodeURIComponent(ws)}/uploads/excluded`, "PATCH", { filePaths: list, excluded });
+  });
+
+  // Project Mapping
+  $("pm-btn").addEventListener("click", async () => {
+    const ws = $("pm-name").value.trim();
+    if (!ws) { log("workspaceName required"); return; }
+    let map;
+    try { map = JSON.parse($("pm-json").value); }
+    catch { log("mapping must be JSON"); return; }
+    await apiJson(`/workspaces/${encodeURIComponent(ws)}/uploads/projects`, "PATCH", { mapping: map });
+  });
+});
 </script>
 </body>
 </html>

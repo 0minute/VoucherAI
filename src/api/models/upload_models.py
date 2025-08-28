@@ -12,7 +12,7 @@ def now_iso() -> str:
     return datetime.utcnow().isoformat() + "Z"
 
 @dataclass
-class UploadFile:
+class UploadFileRow:
     rel: str                               # PROJECT_ROOT 기준 상대경로
     project: Optional[str] = None
     excluded: bool = False
@@ -37,8 +37,8 @@ class UploadFile:
         }
 
     @staticmethod
-    def from_dict(d: dict) -> "UploadFile":
-        return UploadFile(
+    def from_dict(d: dict) -> "UploadFileRow":
+        return UploadFileRow(
             rel=d["rel"],
             project=d.get("project"),
             excluded=bool(d.get("excluded", False)),
@@ -50,12 +50,12 @@ class UploadFile:
 
 @dataclass
 class UploadFiles:
-    files: Dict[str, UploadFile] = field(default_factory=dict)  # key = rel
+    files: Dict[str, UploadFileRow] = field(default_factory=dict)  # key = rel
     version: int = 1
     updated_at: str = field(default_factory=now_iso)
 
     # CRUD
-    def upsert(self, f: UploadFile) -> None:
+    def upsert(self, f: UploadFileRow) -> None:
         self.files[f.rel] = f
         self.touch()
 
@@ -63,7 +63,7 @@ class UploadFiles:
         self.files.pop(rel, None)
         self.touch()
 
-    def get(self, rel: str) -> Optional[UploadFile]:
+    def get(self, rel: str) -> Optional[UploadFileRow]:
         return self.files.get(rel)
 
     # Bulk ops
@@ -106,7 +106,7 @@ class UploadFiles:
     def from_dict(d: dict) -> "UploadFiles":
         uf = UploadFiles(version=int(d.get("version", 1)), updated_at=d.get("updated_at", now_iso()))
         for row in d.get("files", []):
-            f = UploadFile.from_dict(row)
+            f = UploadFileRow.from_dict(row)
             uf.files[f.rel] = f
         return uf
 

@@ -327,6 +327,11 @@ def set_files_excluded(workspace_name: str, paths: list[str], excluded: bool, cl
     data.setdefault("files", {})
     data["files"]["excluded"] = sorted(ex)
     _write_setting(sf, data)
+
+    read_index = _read_uploads_index(workspace_name)
+    read_index["files"] = [f for f in read_index["files"] if f["rel"] not in norm]
+    _write_uploads_index(workspace_name, read_index)
+
     return list_uploads_state(workspace_name)
 
 # --- 현재 업로드 상태(프런트에 바로 주기 좋음) ---
@@ -351,7 +356,8 @@ def _read_uploads_index(workspace_name: str) -> dict:
     return json.loads(p.read_text(encoding="utf-8"))
 
 def get_uploaded_files_path(workspace_name: str) -> list[str]:
-    uploads_index = get_uploads_index_path(workspace_name)
+    # uploads_index = get_uploads_index_path(workspace_name)
+    uploads_index = _read_uploads_index(workspace_name)
     uploaded_files = uploads_index.get("files", [])
     return [os.path.join(PROJECT_ROOT, file.get("rel")) for file in uploaded_files]
 

@@ -14,7 +14,7 @@
     "금액": [
         {
             "value": "1452000",
-            "source_id": "p0_00023"
+            "source_id": "p0_00019"
         }
     ],
     "유형": [
@@ -43,8 +43,8 @@
     ],
     "계정과목": "연예보조_기타",
     "계정코드": 53899,
-    "프로젝트명": "HUNTRIX",
+    "프로젝트명": null,
     "거래처코드": "10001",
     "거래처명": "HUNTRIX한의원",
-    "file_id": "test\\1. OCR\\INPUT\\HUNTRIX.png"
+    "file_id": "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\wshopp\\input_files\\HUNTRIX.png"
 }
