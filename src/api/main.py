@@ -715,7 +715,7 @@ def run_ocr_and_journal(workspaceName: str):
                 "llmResults": llm_results_l,
                 "journalPath": jpath,
                 "visualizations": viz_for_front,
-                "joruanl": journal_entry_l
+                "journal": journal_entry_l
             },
             error=None,
             ts=_now_iso()
