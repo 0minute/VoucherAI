@@ -1,0 +1,27 @@
+{
+  "workspace_name": "HUNTRIX 2506 헤매 정산",
+  "version": 2,
+  "created_at": "2025-08-27T08:45:26.567943Z",
+  "updated_at": "2025-08-27T08:45:26.599691Z",
+  "paths": {
+    "input_dir": "C:\\Users\\skimz036\\Desktop\\AX Node\\VoucherAI\\workspace\\HUNTRIX 2506 헤매 정산\\input_files",
+    "intermediate_dir": "C:\\Users\\skimz036\\Desktop\\AX Node\\VoucherAI\\workspace\\HUNTRIX 2506 헤매 정산\\intermediate",
+    "ocr_dir": "C:\\Users\\skimz036\\Desktop\\AX Node\\VoucherAI\\workspace\\HUNTRIX 2506 헤매 정산\\intermediate\\ocr_results",
+    "llm_dir": "C:\\Users\\skimz036\\Desktop\\AX Node\\VoucherAI\\workspace\\HUNTRIX 2506 헤매 정산\\intermediate\\llm_results",
+    "journal_dir": "C:\\Users\\skimz036\\Desktop\\AX Node\\VoucherAI\\workspace\\HUNTRIX 2506 헤매 정산\\intermediate\\journal_entries",
+    "final_output_dir": "C:\\Users\\skimz036\\Desktop\\AX Node\\VoucherAI\\workspace\\HUNTRIX 2506 헤매 정산\\final_output",
+    "logs_dir": "C:\\Users\\skimz036\\Desktop\\AX Node\\VoucherAI\\workspace\\HUNTRIX 2506 헤매 정산\\logs"
+  },
+  "meta": {
+    "target_period": "2025-08-01 ~ 2025-08-31",
+    "line_count": 0
+  },
+  "files": {
+    "uploaded": [],
+    "ocr_results": [],
+    "llm_results": [],
+    "visualization": {},
+    "journal_drafts": [],
+    "final_artifacts": []
+  }
+}

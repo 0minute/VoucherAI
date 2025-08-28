@@ -7,6 +7,7 @@ class DashboardManager {
     this.workspaces = [];
     this.journals = [];
     this.isExpanded = false;
+    this.apiBaseUrl = 'http://localhost:8000'; // 백엔드 API 기본 URL
     
     this.init();
   }
@@ -79,44 +80,88 @@ class DashboardManager {
 
   async loadWorkspaces() {
     try {
-      // 로컬 스토리지 초기화하고 새로운 더미 데이터 강제 적용
-      localStorage.removeItem('workspaces');
+      console.log('🔄 백엔드에서 Workspace 목록을 가져오는 중...');
       
-      // 기본 Workspace 데이터 생성 (첫 번째는 비우고, 나머지는 dummy data)
-      this.workspaces = [
-        {
-          id: '',
-          title: '',
-          status: '',
-          createdAt: ''
-        },
-        {
-          id: 'ws_002',
-          title: '2506 HUNTRIX 공연매출 정산',
-          status: 'active',
-          createdAt: '2025-07-05T00:00:00Z'
-        },
-        {
-          id: 'ws_003',
-          title: '2505 SajaBoys 스타일링 비용 정산',
-          status: 'completed',
-          createdAt: '2025-06-03T00:00:00Z'
-        }
-      ];
-      localStorage.setItem('workspaces', JSON.stringify(this.workspaces));
-
+      // 백엔드 API에서 Workspace 목록 조회
+      const backendWorkspaces = await this.fetchWorkspaces();
+      
+      // 백엔드 데이터를 프론트엔드 형식으로 변환
+      this.workspaces = backendWorkspaces.map(workspace => ({
+        id: workspace.workspaceName, // 백엔드의 workspaceName을 id로 사용
+        title: workspace.workspaceName,
+        status: 'active', // 기본값으로 active 설정
+        createdAt: new Date().toISOString(), // 현재 시간으로 설정
+        periodStart: workspace.period?.periodStart,
+        periodEnd: workspace.period?.periodEnd
+      }));
+      
+      // 빈 Workspace 카드를 첫 번째에 추가 (새로 생성할 수 있도록)
+      this.workspaces.unshift({
+        id: '',
+        title: '',
+        status: '',
+        createdAt: ''
+      });
+      
       // 생성일 순으로 정렬 (최신순)
-      this.workspaces.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      this.workspaces.sort((a, b) => {
+        if (!a.createdAt) return 1; // 빈 카드는 맨 뒤로
+        if (!b.createdAt) return -1;
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+      
+      // 로컬 스토리지에 저장
+      localStorage.setItem('workspaces', JSON.stringify(this.workspaces));
       
       this.renderWorkspaceGrid();
       
       // 더미 분개 데이터 로드
       this.loadDummyJournals();
       
+      console.log('✅ 백엔드 Workspace 목록 로드 완료:', this.workspaces.length);
+      
     } catch (error) {
-      console.error('Workspace 로딩 실패:', error);
-      window.toast.show('error', '로딩 실패', 'Workspace를 불러오지 못했습니다.');
-      this.showEmptyState('workspace');
+      console.error('❌ 백엔드 Workspace 로딩 실패:', error);
+      
+      // 백엔드 연결 실패 시 기존 더미 데이터 사용
+      console.log('🔄 더미 데이터로 폴백...');
+      this.loadFallbackWorkspaces();
+    }
+  }
+
+  // 백엔드 연결 실패 시 사용할 폴백 데이터
+  loadFallbackWorkspaces() {
+    console.log('🔄 더미 데이터로 폴백 중...');
+    
+    this.workspaces = [
+      {
+        id: '',
+        title: '',
+        status: '',
+        createdAt: ''
+      },
+      {
+        id: 'ws_002',
+        title: '2506 HUNTRIX 공연매출 정산',
+        status: 'active',
+        createdAt: '2025-07-05T00:00:00Z'
+      },
+      {
+        id: 'ws_003',
+        title: '2505 SajaBoys 스타일링 비용 정산',
+        status: 'completed',
+        createdAt: '2025-06-03T00:00:00Z'
+      }
+    ];
+    
+    localStorage.setItem('workspaces', JSON.stringify(this.workspaces));
+    this.renderWorkspaceGrid();
+    
+    // 사용자에게 백엔드 연결 실패 알림
+    if (window.toast) {
+      window.toast.show('warning', '백엔드 연결 실패', '더미 데이터를 사용합니다. 네트워크 연결을 확인해주세요.');
+    } else {
+      console.warn('⚠️ 백엔드 연결 실패로 더미 데이터를 사용합니다.');
     }
   }
 
@@ -496,32 +541,34 @@ class DashboardManager {
 
   async createWorkspace(title) {
     try {
-      // TODO: 실제 API 호출로 Workspace 생성
-      // const response = await fetch('/api/workspaces', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ title })
-      // });
+      console.log('🔄 백엔드에 Workspace 생성 요청 중...');
       
-      // 새 Workspace 생성
-      const workspace = {
-        id: `ws_${Date.now()}`,
-        title: title,
+      // 기본 기간 설정 (현재 월의 시작과 끝)
+      const now = new Date();
+      const periodStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      const periodEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()}`;
+      
+      // 백엔드 API 호출하여 Workspace 생성
+      const result = await this.createWorkspaceAPI(title, periodStart, periodEnd);
+      
+      console.log('✅ 백엔드 Workspace 생성 완료:', result);
+      
+      // 새로 생성된 Workspace를 목록에 추가
+      const newWorkspace = {
+        id: result.workspaceName,
+        title: result.workspaceName,
         status: 'active',
-        uploadCount: 0,
-        journalCount: 0,
-        lastActivity: new Date().toISOString(),
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        periodStart: result.period?.periodStart,
+        periodEnd: result.period?.periodEnd
       };
       
-      // 로컬 스토리지에 저장
-      const workspaces = JSON.parse(localStorage.getItem('workspaces') || '[]');
-      workspaces.unshift(workspace); // 맨 앞에 추가
-      localStorage.setItem('workspaces', JSON.stringify(workspaces));
+      // 첫 번째 카드(빈 카드)를 새로 생성된 workspace로 교체
+      this.workspaces[0] = newWorkspace;
       
-      // 첫 번째 카드를 새로 생성된 workspace로 업데이트
-      this.workspaces[0] = workspace;
-
+      // 로컬 스토리지 업데이트
+      localStorage.setItem('workspaces', JSON.stringify(this.workspaces));
+      
       // 모달 닫기
       this.closeWorkspaceModal();
       
@@ -530,11 +577,11 @@ class DashboardManager {
       
       // Workspace 페이지로 이동 (제목을 URL 파라미터로 전달)
       const encodedTitle = encodeURIComponent(title);
-      window.location.href = `../workspace/workspace.html?id=${workspace.id}&title=${encodedTitle}`;
+      window.location.href = `../workspace/workspace.html?id=${newWorkspace.id}&title=${encodedTitle}`;
       
     } catch (error) {
-      console.error('Workspace 생성 실패:', error);
-      alert('Workspace 생성에 실패했습니다. 다시 시도해주세요.');
+      console.error('❌ Workspace 생성 실패:', error);
+      alert(`Workspace 생성에 실패했습니다: ${error.message}`);
     }
   }
 
@@ -565,6 +612,62 @@ class DashboardManager {
     } else {
       expandBtn.style.display = 'inline-flex';
       collapseBtn.style.display = 'none';
+    }
+  }
+
+  // ================================================== //
+  // 백엔드 API 호출 메서드들
+  // ================================================== //
+  
+  // Workspace 목록 조회
+  async fetchWorkspaces() {
+    try {
+      const response = await fetch(`${this.apiBaseUrl}/workspaces`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      if (result.ok && result.data && result.data.workspaces) {
+        return result.data.workspaces;
+      } else {
+        throw new Error('Invalid response format');
+      }
+    } catch (error) {
+      console.error('❌ Workspace 목록 조회 실패:', error);
+      throw error;
+    }
+  }
+
+  // Workspace 생성
+  async createWorkspaceAPI(workspaceName, periodStart, periodEnd) {
+    try {
+      const response = await fetch(`${this.apiBaseUrl}/workspaces`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          workspaceName: workspaceName,
+          periodStart: periodStart,
+          periodEnd: periodEnd
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      if (result.ok && result.data) {
+        return result.data;
+      } else {
+        throw new Error('Invalid response format');
+      }
+    } catch (error) {
+      console.error('❌ Workspace 생성 실패:', error);
+      throw error;
     }
   }
 
