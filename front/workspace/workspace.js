@@ -72,6 +72,14 @@ getWorkspaceNameFromURL() {
       });
     });
 
+    // 분개 생성 버튼
+    const btnGenerateJournal = document.getElementById('btn-generate-journal');
+    if (btnGenerateJournal) {
+      btnGenerateJournal.addEventListener('click', () => {
+        this.generateJournal();
+      });
+    }
+
     // 윈도우 리사이즈
     window.addEventListener('resize', debounce(() => {
       this.isMobile = window.innerWidth <= 768;
@@ -973,7 +981,8 @@ getStatusHTML(status, message) {
       console.log('🔄 분개 생성 시작...', workspaceName);
       window.toast?.show('info', 'OCR 처리 중', '업로드된 이미지들을 OCR 처리하고 분개를 생성 중입니다...');
       
-      const response = await fetch(`/workspaces/${encodeURIComponent(workspaceName)}/pipeline/ocr-journal`, {
+      const baseUrl = getBaseUrl();
+      const response = await fetch(`${baseUrl}/workspaces/${workspaceName}/pipeline/ocr-journal`, {
         method: 'POST',
         headers: this.apiHeaders
       });
@@ -1039,7 +1048,7 @@ getStatusHTML(status, message) {
         this.clearFileTable();
         
         // 새로운 파일들로 테이블 채우기
-        const uploadedFiles = result.data.records || [];
+        const uploadedFiles = result.data.files || [];
         uploadedFiles.forEach(fileInfo => {
           const fileRow = this.createFileRowFromServer(fileInfo);
           this.fillEmptyRow(fileRow);
@@ -1058,9 +1067,19 @@ getStatusHTML(status, message) {
 
   // 서버에서 받은 파일 정보로 fileRow 생성
   createFileRowFromServer(fileInfo) {
+    // Windows 경로 구분자 \와 Unix 경로 구분자 / 모두 처리
+    let fileName = 'Unknown';
+    if (fileInfo.name) {
+      fileName = fileInfo.name;
+    } else if (fileInfo.rel) {
+      // Windows 경로(\\)와 Unix 경로(/) 모두 처리
+      const pathParts = fileInfo.rel.split(/[\\\/]/);
+      fileName = pathParts[pathParts.length - 1]; // 마지막 부분이 파일명
+    }
+    
     return {
       id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      name: fileInfo.name || fileInfo.rel?.split('/').pop() || 'Unknown',
+      name: fileName,
       size: fileInfo.size || 0,
       type: fileInfo.mime || 'application/octet-stream',
       status: 'completed',
@@ -1085,8 +1104,21 @@ getStatusHTML(status, message) {
   // URL에서 워크스페이스 이름 추출
   getWorkspaceNameFromURL() {
     const urlParams = new URLSearchParams(window.location.search);
-    let workspaceName = urlParams.get('workspace');
     
+    // 1순위: id 파라미터 (가장 정확)
+    let workspaceName = urlParams.get('id');
+    
+    // 2순위: workspace 파라미터
+    if (!workspaceName) {
+      workspaceName = urlParams.get('workspace');
+    }
+    
+    // 3순위: title 파라미터
+    if (!workspaceName) {
+      workspaceName = urlParams.get('title');
+    }
+    
+    // 4순위: URL 경로에서 추출
     if (!workspaceName) {
       const pathParts = window.location.pathname.split('/');
       const workspaceIndex = pathParts.indexOf('workspace');
@@ -1095,6 +1127,7 @@ getStatusHTML(status, message) {
       }
     }
     
+    // 5순위: DOM에서 제목 추출
     if (!workspaceName) {
       const titleElement = document.getElementById('workspace-title-text');
       if (titleElement && titleElement.textContent) {
@@ -1102,6 +1135,7 @@ getStatusHTML(status, message) {
       }
     }
     
+    console.log('🔍 추출된 워크스페이스 이름:', workspaceName);
     return workspaceName;
   }
 }

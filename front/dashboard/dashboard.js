@@ -141,37 +141,64 @@ class DashboardManager {
 
   // 백엔드 연결 실패 시 사용할 폴백 데이터
   loadFallbackWorkspaces() {
-    console.log('🔄 더미 데이터로 폴백 중...');
+    console.log('🔄 실제 workspace 폴더에서 데이터 로드 중...');
     
+    // 실제 workspace 폴더에 있는 폴더들을 하드코딩으로 추가
     this.workspaces = [
       {
-        id: '',
+        id: 'empty',
         title: '',
         status: '',
         createdAt: ''
       },
       {
-        id: 'ws_002',
-        title: '2506 HUNTRIX 공연매출 정산',
+        id: '0829',
+        title: '0829',
         status: 'active',
-        createdAt: '2025-07-05T00:00:00Z'
+        createdAt: '2025-08-29T00:00Z'
       },
       {
-        id: 'ws_003',
-        title: '2505 SajaBoys 스타일링 비용 정산',
-        status: 'completed',
-        createdAt: '2025-06-03T00:00:00Z'
+        id: '0828TEST',
+        title: '0828TEST',
+        status: 'active',
+        createdAt: '2025-08-28T00:00Z'
+      },
+      {
+        id: 'test_upload',
+        title: 'test_upload',
+        status: 'active',
+        createdAt: '2025-08-28T00:00Z'
+      },
+      {
+        id: 'TESTEST',
+        title: 'TESTEST',
+        status: 'active',
+        createdAt: '2025-08-28T00:00Z'
+      },
+      {
+        id: '2506HUNTRIX_MAEKUP',
+        title: '2506HUNTRIX_MAEKUP',
+        status: 'active',
+        createdAt: '2025-06-25T00:00Z'
+      },
+      {
+        id: '12345678',
+        title: '12345678',
+        status: 'active',
+        createdAt: '2025-08-28T00:00Z'
       }
     ];
     
     localStorage.setItem('workspaces', JSON.stringify(this.workspaces));
     this.renderWorkspaceGrid();
     
+    console.log('✅ 실제 workspace 폴더에서 로드된 데이터:', this.workspaces);
+    
     // 사용자에게 백엔드 연결 실패 알림
     if (window.toast) {
-      window.toast.show('warning', '백엔드 연결 실패', '더미 데이터를 사용합니다. 네트워크 연결을 확인해주세요.');
+      window.toast.show('warning', '백엔드 연결 실패', '실제 workspace 폴더의 데이터를 사용합니다.');
     } else {
-      console.warn('⚠️ 백엔드 연결 실패로 더미 데이터를 사용합니다.');
+      console.warn('⚠️ 백엔드 연결 실패로 실제 workspace 폴더의 데이터를 사용합니다.');
     }
   }
 
@@ -190,11 +217,8 @@ class DashboardManager {
     grid.style.display = 'grid';
     empty.style.display = 'none';
     
-    // 펼치기/접기 상태에 따라 표시할 workspace 결정
-    let displayWorkspaces = this.workspaces;
-    if (!this.isExpanded && this.workspaces.length > 3) {
-      displayWorkspaces = this.workspaces.slice(0, 3);
-    }
+    // 모든 workspace를 표시 (펼치기/접기 제한 제거)
+    const displayWorkspaces = this.workspaces;
     
     grid.innerHTML = displayWorkspaces.map(workspace => this.createWorkspaceCard(workspace)).join('');
     

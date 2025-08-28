@@ -17,7 +17,7 @@ import mimetypes
 from datetime import datetime
 from src.api.utils import _now_iso
 
-DEFAULT_ALLOWED_EXT = (".png",".jpg",".jpeg")
+DEFAULT_ALLOWED_EXT = (".png",".jpg",".jpeg",".pdf")
 
 #===보조함수===
 def _to_iter(items: Union[str, Path, Iterable[Union[str, Path]]]) -> list[Path]:
