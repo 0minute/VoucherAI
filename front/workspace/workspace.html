@@ -77,11 +77,11 @@
 
             <!-- 프로젝트명 수정 모달 -->
             <div id="edit-project-modal" class="modal" aria-hidden="true">
-                <div class="modal-backdrop" onclick="closeEditProjectModal()"></div>
+                <div class="modal-backdrop" id="edit-project-backdrop"></div>
                 <div class="modal-content edit-project-modal-content">
                     <div class="modal-header">
                         <h2>프로젝트명 수정</h2>
-                        <button class="modal-close" onclick="closeEditProjectModal()">
+                        <button class="modal-close" id="edit-project-close">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -92,8 +92,8 @@
                         </div>
                     </div>
                     <div class="modal-actions">
-                        <button class="btn-ghost" onclick="closeEditProjectModal()">취소</button>
-                        <button class="btn-primary" onclick="confirmEditProject()">확인</button>
+                        <button class="btn-ghost" id="edit-project-cancel">취소</button>
+                        <button class="btn-primary" id="edit-project-confirm">확인</button>
                     </div>
                 </div>
             </div>
@@ -106,7 +106,7 @@
                         <h1 class="workspace-title-text" id="workspace-title-text"></h1>
                         <div class="workspace-title-meta">
                             <span class="workspace-created-date" id="workspace-created-date"></span>
-                            <button class="btn-edit-project" id="btn-edit-project">
+                            <button type="button" class="btn-edit-project" id="btn-edit-project">
                                 <i class="fas fa-edit"></i>
                                 Project명 수정
                             </button>
@@ -139,11 +139,11 @@
                             </div>
 
                             <div class="upload-actions">
-                                <button id="btn-upload-images" class="btn-primary" data-testid="btn-upload-images">
+                                <button type="button" id="btn-upload-images" class="btn-primary" data-testid="btn-upload-images">
                                     <i class="fas fa-image"></i>
                                     개별 파일 업로드
                                 </button>
-                                <button id="btn-upload-zip" class="btn-ghost" data-testid="btn-upload-zip">
+                                <button type="button" id="btn-upload-zip" class="btn-ghost" data-testid="btn-upload-zip">
                                     <i class="fas fa-file-archive"></i>
                                     ZIP 파일 업로드
                                 </button>
@@ -233,7 +233,7 @@
                             <div class="table-stats">
                                 <span id="selected-count">0개 선택됨</span>
                             </div>
-                            <button id="btn-bulk-project" class="btn-primary" disabled data-testid="btn-bulk-project">
+                            <button type="button" id="btn-bulk-project" class="btn-primary" disabled data-testid="btn-bulk-project">
                                 프로젝트명 일괄 수정
                             </button>
                         </div>
@@ -253,10 +253,10 @@
                         
                         <!-- 분개 생성 버튼 -->
                         <div class="journal-controls">
-                            <button id="btn-generate-journal" class="btn-primary" data-testid="btn-generate-journal">
+                            <button type="button" id="btn-generate-journal" class="btn-primary" data-testid="btn-generate-journal">
                                 분개 생성
                             </button>
-                            <button id="btn-confirm-journal" class="btn-ghost" data-testid="btn-confirm-journal">
+                            <button type="button" id="btn-confirm-journal" class="btn-ghost" data-testid="btn-confirm-journal">
                                 분개 확정
                             </button>
                         </div>
@@ -352,11 +352,128 @@
         </div>
     </div>
 
+    <!-- 원본 이미지 보기 모달 -->
+    <div id="image-modal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="image-modal-title">
+        <div class="modal-backdrop" id="image-modal-backdrop"></div>
+        <div class="modal-content image-modal-content">
+            <header class="modal-header">
+                <h2 id="image-modal-title">원본 이미지</h2>
+                <button type="button" class="modal-close" id="image-modal-close" aria-label="닫기">×</button>
+            </header>
+            
+            <div class="modal-body image-modal-body">
+                <div class="image-container">
+                    <img id="modal-image" src="" alt="원본 이미지" style="max-width: 100%; max-height: 80vh; object-fit: contain;">
+                </div>
+                <div class="image-info">
+                    <p id="image-file-name">파일명: -</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 분개 수정 모달 -->
+    <div id="edit-journal-modal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="edit-modal-title">
+        <div class="modal-backdrop" id="edit-modal-backdrop"></div>
+        <div class="modal-content edit-modal-content">
+            <header class="modal-header">
+                <h2 id="edit-modal-title">분개 수정</h2>
+                <button type="button" class="modal-close" id="edit-modal-close" aria-label="닫기">×</button>
+            </header>
+            
+            <div class="modal-body edit-modal-body">
+                <form id="edit-journal-form" class="edit-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="edit-date" class="form-label">날짜</label>
+                            <input type="date" id="edit-date" class="form-input">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-counterparty" class="form-label">거래처</label>
+                            <input type="text" id="edit-counterparty" class="form-input">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-amount" class="form-label">금액</label>
+                            <input type="number" id="edit-amount" class="form-input">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-type" class="form-label">유형</label>
+                            <select id="edit-type" class="form-input">
+                                <option value="">선택하세요</option>
+                                <option value="매출">매출</option>
+                                <option value="매입">매입</option>
+                                <option value="비용">비용</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-business-number" class="form-label">사업자등록번호</label>
+                            <input type="text" id="edit-business-number" class="form-input">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-representative" class="form-label">대표자</label>
+                            <input type="text" id="edit-representative" class="form-input">
+                        </div>
+                        
+                        <div class="form-group full-width">
+                            <label for="edit-address" class="form-label">주소</label>
+                            <input type="text" id="edit-address" class="form-input">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-document-type" class="form-label">증빙유형</label>
+                            <select id="edit-document-type" class="form-input">
+                                <option value="">선택하세요</option>
+                                <option value="세금계산서">세금계산서</option>
+                                <option value="계산서">계산서</option>
+                                <option value="현금영수증">현금영수증</option>
+                                <option value="카드매출전표">카드매출전표</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-account-name" class="form-label">계정과목</label>
+                            <input type="text" id="edit-account-name" class="form-input">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-account-code" class="form-label">계정코드</label>
+                            <input type="text" id="edit-account-code" class="form-input">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-project-name" class="form-label">프로젝트명</label>
+                            <input type="text" id="edit-project-name" class="form-input">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-counterparty-code" class="form-label">거래처코드</label>
+                            <input type="text" id="edit-counterparty-code" class="form-input">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-counterparty-name" class="form-label">거래처명</label>
+                            <input type="text" id="edit-counterparty-name" class="form-input">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" id="edit-confirm" class="btn-primary">저장</button>
+                <button type="button" id="edit-cancel" class="btn-ghost">취소</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div id="toast-container" class="toast-container"></div>
 
     <script src="../common/utils.js"></script>
-    <script src="workspace.js"></script>
     <script>
         // Workspace 제목 표시 기능
         function displayWorkspaceTitle() {
@@ -386,67 +503,7 @@
             }
         }
         
-        // Project명 수정 모달 열기
-        function setupProjectEditButton() {
-            const editBtn = document.getElementById('btn-edit-project');
-            if (editBtn) {
-                editBtn.addEventListener('click', function() {
-                    const currentTitle = document.getElementById('workspace-title-text').textContent;
-                    const modal = document.getElementById('edit-project-modal');
-                    const input = document.getElementById('new-project-name');
-                    
-                    // 현재 제목을 입력 필드에 설정
-                    input.value = currentTitle;
-                    input.select(); // 텍스트 선택
-                    
-                    // 모달 표시
-                    modal.setAttribute('aria-hidden', 'false');
-                    
-                    // Enter 키 이벤트 리스너 추가
-                    input.addEventListener('keydown', function(e) {
-                        if (e.key === 'Enter') {
-                            confirmEditProject();
-                        } else if (e.key === 'Escape') {
-                            closeEditProjectModal();
-                        }
-                    });
-                });
-            }
-        }
-        
-        // 프로젝트명 수정 모달 닫기
-        function closeEditProjectModal() {
-            const modal = document.getElementById('edit-project-modal');
-            modal.setAttribute('aria-hidden', 'true');
-        }
-        
-        // 프로젝트명 수정 확인
-        function confirmEditProject() {
-            const input = document.getElementById('new-project-name');
-            const newTitle = input.value.trim();
-            const currentTitle = document.getElementById('workspace-title-text').textContent;
-            
-            if (newTitle && newTitle !== currentTitle) {
-                // 제목 업데이트
-                document.getElementById('workspace-title-text').textContent = newTitle;
-                
-                // URL 업데이트
-                const url = new URL(window.location);
-                url.searchParams.set('title', encodeURIComponent(newTitle));
-                window.history.replaceState({}, '', url);
-                
-                // 모달 닫기
-                closeEditProjectModal();
-                
-            } else if (!newTitle) {
-                // 빈 값인 경우 경고
-                input.focus();
-                input.style.borderColor = '#e74c3c';
-                setTimeout(() => {
-                    input.style.borderColor = '';
-                }, 2000);
-            }
-        }
+        // Project명 수정 기능은 workspace.js ES Module에서 처리
         
 
         
@@ -468,9 +525,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Workspace 제목 표시
             displayWorkspaceTitle();
-            
-            // Project명 수정 버튼 설정
-            setupProjectEditButton();
             
             logoutModal = document.getElementById('logout-modal');
             logoutConfirm = document.getElementById('logout-confirm');
@@ -496,5 +550,8 @@
             });
         });
     </script>
+    
+    <!-- ES Module로 Workspace Manager 로드 -->
+    <script type="module" src="./workspace.js"></script>
 </body>
 </html>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 설정</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .config-form {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .success {
+            color: green;
+            margin-top: 20px;
+        }
+        .error {
+            color: red;
+            margin-top: 20px;
+        }
+        .current {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="config-form">
+        <h1>🔧 API 설정</h1>
+        
+        <div class="current">
+            <h3>현재 설정:</h3>
+            <p><strong>BASE_URL:</strong> <span id="current-base-url">-</span></p>
+            <p><strong>TOKEN:</strong> <span id="current-token">-</span></p>
+        </div>
+
+        <div class="form-group">
+            <label for="baseUrlInput">Base URL:</label>
+            <input type="text" id="baseUrlInput" placeholder="http://localhost:8000" value="http://localhost:8000">
+        </div>
+
+        <div class="form-group">
+            <label for="tokenInput">Token (선택사항):</label>
+            <input type="text" id="tokenInput" placeholder="Bearer token (비워둘 수 있음)">
+        </div>
+
+        <button id="saveBtn">설정 저장</button>
+        <button id="pingBtn" style="background: #28a745;">연결 테스트</button>
+        <button onclick="clearConfig()" style="background: #dc3545;">설정 초기화</button>
+
+        <hr style="margin: 30px 0;">
+        
+        <h3>🔧 워크스페이스 이름 변경 테스트</h3>
+        <div class="form-group">
+            <label for="oldNameInput">기존 이름:</label>
+            <input type="text" id="oldNameInput" placeholder="예: STELLAR 광고촬영 정산">
+        </div>
+        <div class="form-group">
+            <label for="newNameInput">새 이름:</label>
+            <input type="text" id="newNameInput" placeholder="예: STELLAR 광고촬영 정산 수정됨">
+        </div>
+        <button id="testRenameBtn" style="background: #ffc107; color: black;">이름 변경 테스트</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script type="module">
+        import { getBaseUrl, setBaseUrl, getToken, setToken } from './front/common/config.js';
+        import apiClient from './front/common/apiClient.js';
+
+        // 현재 설정 표시
+        function loadCurrentConfig() {
+            document.getElementById('current-base-url').textContent = getBaseUrl() || '설정되지 않음';
+            document.getElementById('current-token').textContent = getToken() ? '설정됨' : '설정되지 않음';
+            
+            // 입력 필드에도 현재 값 설정
+            document.getElementById('baseUrlInput').value = getBaseUrl();
+            document.getElementById('tokenInput').value = getToken();
+        }
+
+        // 설정 저장
+        window.saveConfig = function() {
+            const baseUrl = document.getElementById('baseUrlInput').value.trim();
+            const token = document.getElementById('tokenInput').value.trim();
+
+            setBaseUrl(baseUrl);
+            setToken(token);
+
+            document.getElementById('result').innerHTML = '<div class="success">✅ 설정이 저장되었습니다!</div>';
+            loadCurrentConfig();
+        };
+
+        // 연결 테스트 - /workspaces 엔드포인트 사용
+        window.testConnection = async function() {
+            const baseUrl = getBaseUrl();
+            if (!baseUrl) {
+                document.getElementById('result').innerHTML = '<div class="error">❌ BASE_URL이 설정되지 않았습니다.</div>';
+                return;
+            }
+
+            const pingBtn = document.getElementById('pingBtn');
+            pingBtn.disabled = true;
+            pingBtn.textContent = '연결 테스트 중...';
+
+            try {
+                console.log('🔄 API 연결 테스트:', baseUrl);
+                const response = await apiClient.get('/workspaces');
+                
+                console.log('✅ API 응답:', response);
+                document.getElementById('result').innerHTML = `<div class="success">✅ 연결 성공! 워크스페이스 ${response.workspaces?.length || 0}개 발견</div>`;
+                
+            } catch (error) {
+                console.error('❌ API 연결 실패:', error);
+                document.getElementById('result').innerHTML = `<div class="error">❌ 연결 실패: ${error.message}</div>`;
+                
+            } finally {
+                pingBtn.disabled = false;
+                pingBtn.textContent = '연결 테스트';
+            }
+        };
+
+        // 설정 초기화
+        window.clearConfig = function() {
+            localStorage.removeItem('BASE_URL');
+            localStorage.removeItem('TOKEN');
+            document.getElementById('baseUrlInput').value = '';
+            document.getElementById('tokenInput').value = '';
+            document.getElementById('result').innerHTML = '<div style="color: orange;">🔄 설정이 초기화되었습니다.</div>';
+            loadCurrentConfig();
+        };
+
+        // 워크스페이스 이름 변경 테스트
+        window.testRename = async function() {
+            const oldName = document.getElementById('oldNameInput').value.trim();
+            const newName = document.getElementById('newNameInput').value.trim();
+            
+            if (!oldName || !newName) {
+                document.getElementById('result').innerHTML = '<div class="error">❌ 기존 이름과 새 이름을 모두 입력해주세요.</div>';
+                return;
+            }
+            
+            if (oldName === newName) {
+                document.getElementById('result').innerHTML = '<div class="error">❌ 기존 이름과 새 이름이 동일합니다.</div>';
+                return;
+            }
+
+            const testBtn = document.getElementById('testRenameBtn');
+            testBtn.disabled = true;
+            testBtn.textContent = '이름 변경 중...';
+
+            try {
+                console.log('🔄 워크스페이스 이름 변경 테스트:', { oldName, newName });
+                
+                // URL 인코딩 확인
+                const encodedOldName = encodeURIComponent(oldName);
+                console.log('🔍 URL 인코딩:', { original: oldName, encoded: encodedOldName });
+                
+                // API 요청
+                console.log('📤 API 요청 상세:', {
+                    url: `/workspaces/${encodedOldName}`,
+                    method: 'PATCH',
+                    body: {
+                        newName: newName,
+                        includeArchived: false
+                    }
+                });
+                
+                const response = await apiClient.patch(`/workspaces/${encodedOldName}`, {
+                    json: {
+                        newName: newName,
+                        includeArchived: false
+                    }
+                });
+                
+                console.log('✅ 이름 변경 성공:', response);
+                document.getElementById('result').innerHTML = `<div class="success">✅ 워크스페이스 이름이 "${newName}"으로 변경되었습니다!</div>`;
+                
+                // 입력 필드 초기화
+                document.getElementById('oldNameInput').value = '';
+                document.getElementById('newNameInput').value = '';
+                
+            } catch (error) {
+                console.error('❌ 워크스페이스 이름 변경 실패:', error);
+                console.error('📋 에러 객체 전체:', JSON.stringify(error, null, 2));
+                
+                // 상세 에러 정보 출력
+                let errorDetail = error.message;
+                if (error.serverError) {
+                    errorDetail += `<br><strong>서버 에러:</strong> ${error.serverError}`;
+                }
+                if (error.status) {
+                    errorDetail += `<br><strong>HTTP 상태:</strong> ${error.status}`;
+                }
+                
+                // JSON으로 전체 에러 정보 표시
+                const errorJson = JSON.stringify({
+                    message: error.message,
+                    status: error.status,
+                    serverError: error.serverError,
+                    ts: error.ts
+                }, null, 2);
+                
+                document.getElementById('result').innerHTML = `
+                    <div class="error">
+                        ❌ 이름 변경 실패: ${errorDetail}
+                        <details style="margin-top: 10px;">
+                            <summary>상세 에러 정보 (클릭해서 펼치기)</summary>
+                            <pre style="background: #f5f5f5; padding: 10px; margin-top: 5px; font-size: 12px; overflow-x: auto;">${errorJson}</pre>
+                        </details>
+                    </div>
+                `;
+                
+            } finally {
+                testBtn.disabled = false;
+                testBtn.textContent = '이름 변경 테스트';
+            }
+        };
+
+        // 이벤트 리스너 설정
+        document.getElementById('saveBtn').addEventListener('click', saveConfig);
+        document.getElementById('pingBtn').addEventListener('click', testConnection);
+        document.getElementById('testRenameBtn').addEventListener('click', testRename);
+
+        // 페이지 로드 시 현재 설정 표시
+        loadCurrentConfig();
+    </script>
+</body>
+</html>

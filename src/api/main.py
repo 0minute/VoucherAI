@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Union, Iterable
 from src.api.utils import _now_iso, fs_to_static_url
 from src.entocr.ocr_main import ocr_image_and_save_json_by_extension
-from src.api.db import read_voucher_data, update_voucher_data
+from src.api.db import read_voucher_data, update_voucher_data, initialize_voucher_data
 import json
 import os
 
@@ -645,7 +645,7 @@ def run_ocr_and_journal(workspaceName: str):
         uploaded_files: list[str] = get_uploaded_files_path(workspaceName)  # 내부 구현
         ocr_results_l, llm_results_l, journal_entry_l = [], [], []
         visualization_d: Dict[str, str] = {}
-
+        initialize_voucher_data(workspaceName, True)
         for file in uploaded_files:
             ocr_result = ocr_image_and_save_json_by_extension(file)
             if not ocr_result:
@@ -687,6 +687,7 @@ def run_ocr_and_journal(workspaceName: str):
             data_dict = get_json_wt_one_value_from_extract_invoice_fields(data)
             data_dict = [data_dict]
             data_dict = drop_source_id_from_json(data_dict)
+            update_voucher_data(workspaceName, file, data_dict[0])
             record_list = make_journal_entry(data_dict)
             # record_list = make_journal_entry_to_record_list(result_dict, os.path.basename(file))
             journal_entry_l.extend(record_list)
@@ -714,7 +715,7 @@ def run_ocr_and_journal(workspaceName: str):
                 "llmResults": llm_results_l,
                 "journalPath": jpath,
                 "visualizations": viz_for_front,
-                "joruanl": journal_entry_l
+                "journal": journal_entry_l
             },
             error=None,
             ts=_now_iso()
@@ -769,9 +770,9 @@ def refresh_journal_entries_api(workspaceName: str):
         ds = read_voucher_data(workspaceName)
         journal_entry_l = []
         for file_id, data in ds.items():
-            result_dict = make_journal_entry(data)
-            record_list = make_journal_entry_to_record_list(result_dict, os.path.basename(file_id))
-            journal_entry_l.append(record_list)
+            record_list = make_journal_entry(data)
+            # record_list = make_journal_entry_to_record_list(result_dict, os.path.basename(file_id))
+            journal_entry_l.extend(record_list)
         jpath = os.path.join(get_journal_path(workspaceName), "journal_entry.json")
         Path(os.path.dirname(jpath)).mkdir(parents=True, exist_ok=True)
         with open(jpath, "w", encoding="utf-8") as f:
@@ -786,7 +787,7 @@ def get_visualization_image_path_api(workspaceName: str, fileId: str = ApiPath(.
     try:
         settings_d = _read_setting(get_setting_file(workspaceName))
         visualization_d = settings_d.get("files", {}).get("visualization", {})
-        fs_path = visualization_d.get(fileId, "")
+        fs_path = visualization_d.get(os.path.basename(fileId), "")
         if not fs_path:
             return ApiResponse(ok=False, data=None, error="Visualization image not found", ts=_now_iso())
         url = fs_to_static_url(fs_path) or fs_path
@@ -820,4 +821,7 @@ def archive_journal_entry_api(workspaceName: str):
         raise HTTPException(status_code=500, detail=str(e))
     
 if __name__ == "__main__":
-    run_ocr_and_journal("wshopp")
+    # get_voucher_data_api("wshopp", "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\wshopp\\input_files\\HUNTRIX.png")
+    # refresh_journal_entries_api("wshopp")
+    # get_visualization_image_path_api("wshopp","visualizations/workspace/wshopp/input_files/HUNTRIX.png")
+    archive_journal_entry_api("wshopp")

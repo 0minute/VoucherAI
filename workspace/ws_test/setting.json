@@ -1,9 +1,0 @@
-{
-    "workspace_name": "ws_test",
-    "target_period": "2025-01-01 ~ 2025-03-31",
-    "uploaded_files": ["input_files/raw_invoice1.pdf", "input_files/raw_invoice2.pdf"],
-    "ocr_results_path": "intermediate/ocr_results/",
-    "llm_results_path": "intermediate/llm_results/",
-    "journal_entries_path": "intermediate/journal_entries/",
-    "line_count": 245
-  }

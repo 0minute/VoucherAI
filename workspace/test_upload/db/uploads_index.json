@@ -1,0 +1,195 @@
+{
+  "version": 8,
+  "updated_at": "2025-08-28T08:29:51.359225Z",
+  "files": [
+    {
+      "rel": "workspace\\test_upload\\input_files\\피부과_일괄.pdf",
+      "project": null,
+      "excluded": false,
+      "size": 115600,
+      "mime": "application/pdf",
+      "created_at": "2025-08-28T08:17:49.946603Z",
+      "updated_at": "2025-08-28T08:17:49.946614Z"
+    },
+    {
+      "rel": "workspace\\test_upload\\input_files\\한의원.pdf",
+      "project": null,
+      "excluded": false,
+      "size": 116877,
+      "mime": "application/pdf",
+      "created_at": "2025-08-28T08:17:49.961768Z",
+      "updated_at": "2025-08-28T08:17:49.961778Z"
+    },
+    {
+      "rel": "workspace\\test_upload\\input_files\\헤어메이크업.pdf",
+      "project": null,
+      "excluded": false,
+      "size": 119654,
+      "mime": "application/pdf",
+      "created_at": "2025-08-28T08:17:49.976312Z",
+      "updated_at": "2025-08-28T08:17:49.976322Z"
+    },
+    {
+      "rel": "workspace\\test_upload\\input_files\\헤어메이크업_일괄.pdf",
+      "project": null,
+      "excluded": false,
+      "size": 116165,
+      "mime": "application/pdf",
+      "created_at": "2025-08-28T08:17:49.989407Z",
+      "updated_at": "2025-08-28T08:17:49.989418Z"
+    },
+    {
+      "rel": "workspace\\test_upload\\input_files\\page_001.png",
+      "project": null,
+      "excluded": false,
+      "size": 354696,
+      "mime": "image/png",
+      "created_at": "2025-08-28T08:21:12.403237Z",
+      "updated_at": "2025-08-28T08:21:12.403250Z"
+    },
+    {
+      "rel": "workspace\\test_upload\\input_files\\R-1.jpg",
+      "project": null,
+      "excluded": false,
+      "size": 203265,
+      "mime": "image/jpeg",
+      "created_at": "2025-08-28T08:21:12.424897Z",
+      "updated_at": "2025-08-28T08:21:12.424913Z"
+    },
+    {
+      "rel": "workspace\\test_upload\\input_files\\R-1.png",
+      "project": null,
+      "excluded": false,
+      "size": 1364854,
+      "mime": "image/png",
+      "created_at": "2025-08-28T08:21:12.447607Z",
+      "updated_at": "2025-08-28T08:21:12.447624Z"
+    },
+    {
+      "rel": "workspace\\test_upload\\input_files\\피부과_일괄 (1).pdf",
+      "project": null,
+      "excluded": false,
+      "size": 115600,
+      "mime": "application/pdf",
+      "created_at": "2025-08-28T08:25:29.809285Z",
+      "updated_at": "2025-08-28T08:25:29.809299Z"
+    },
+    {
+      "rel": "workspace\\test_upload\\input_files\\한의원 (1).pdf",
+      "project": null,
+      "excluded": false,
+      "size": 116877,
+      "mime": "application/pdf",
+      "created_at": "2025-08-28T08:25:29.825916Z",
+      "updated_at": "2025-08-28T08:25:29.825928Z"
+    },
+    {
+      "rel": "workspace\\test_upload\\input_files\\헤어메이크업 (1).pdf",
+      "project": null,
+      "excluded": false,
+      "size": 119654,
+      "mime": "application/pdf",
+      "created_at": "2025-08-28T08:25:29.839963Z",
+      "updated_at": "2025-08-28T08:25:29.839981Z"
+    },
+    {
+      "rel": "workspace\\test_upload\\input_files\\헤어메이크업_일괄 (1).pdf",
+      "project": null,
+      "excluded": false,
+      "size": 116165,
+      "mime": "application/pdf",
+      "created_at": "2025-08-28T08:25:29.854492Z",
+      "updated_at": "2025-08-28T08:25:29.854506Z"
+    },
+    {
+      "rel": "workspace\\test_upload\\input_files\\R-1 (1).jpg",
+      "project": null,
+      "excluded": false,
+      "size": 203265,
+      "mime": "image/jpeg",
+      "created_at": "2025-08-28T08:25:51.219213Z",
+      "updated_at": "2025-08-28T08:25:51.219223Z"
+    },
+    {
+      "rel": "workspace\\test_upload\\input_files\\R-1 (1).png",
+      "project": null,
+      "excluded": false,
+      "size": 1364854,
+      "mime": "image/png",
+      "created_at": "2025-08-28T08:25:51.231319Z",
+      "updated_at": "2025-08-28T08:25:51.231338Z"
+    },
+    {
+      "rel": "workspace\\test_upload\\input_files\\TI-1.png",
+      "project": null,
+      "excluded": false,
+      "size": 2011941,
+      "mime": "image/png",
+      "created_at": "2025-08-28T08:25:51.243726Z",
+      "updated_at": "2025-08-28T08:25:51.243742Z"
+    },
+    {
+      "rel": "workspace\\test_upload\\input_files\\TI-1 (1).png",
+      "project": null,
+      "excluded": false,
+      "size": 2011941,
+      "mime": "image/png",
+      "created_at": "2025-08-28T08:26:20.000447Z",
+      "updated_at": "2025-08-28T08:26:20.000462Z"
+    },
+    {
+      "rel": "workspace\\test_upload\\input_files\\TI-2.pdf",
+      "project": null,
+      "excluded": false,
+      "size": 133229,
+      "mime": "application/pdf",
+      "created_at": "2025-08-28T08:26:20.010503Z",
+      "updated_at": "2025-08-28T08:26:20.010517Z"
+    },
+    {
+      "rel": "workspace\\test_upload\\input_files\\피부과.pdf",
+      "project": null,
+      "excluded": false,
+      "size": 119392,
+      "mime": "application/pdf",
+      "created_at": "2025-08-28T08:26:20.021969Z",
+      "updated_at": "2025-08-28T08:26:20.021988Z"
+    },
+    {
+      "rel": "workspace\\test_upload\\input_files\\피부과 (1).pdf",
+      "project": null,
+      "excluded": false,
+      "size": 119392,
+      "mime": "application/pdf",
+      "created_at": "2025-08-28T08:29:20.722751Z",
+      "updated_at": "2025-08-28T08:29:20.722760Z"
+    },
+    {
+      "rel": "workspace\\test_upload\\input_files\\피부과_일괄 (2).pdf",
+      "project": null,
+      "excluded": false,
+      "size": 115600,
+      "mime": "application/pdf",
+      "created_at": "2025-08-28T08:29:20.737636Z",
+      "updated_at": "2025-08-28T08:29:20.737647Z"
+    },
+    {
+      "rel": "workspace\\test_upload\\input_files\\TI-1 (2).png",
+      "project": null,
+      "excluded": false,
+      "size": 2011941,
+      "mime": "image/png",
+      "created_at": "2025-08-28T08:29:51.346642Z",
+      "updated_at": "2025-08-28T08:29:51.346655Z"
+    },
+    {
+      "rel": "workspace\\test_upload\\input_files\\TI-2 (1).pdf",
+      "project": null,
+      "excluded": false,
+      "size": 133229,
+      "mime": "application/pdf",
+      "created_at": "2025-08-28T08:29:51.359202Z",
+      "updated_at": "2025-08-28T08:29:51.359216Z"
+    }
+  ]
+}

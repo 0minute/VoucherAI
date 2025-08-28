@@ -2,12 +2,15 @@
 // Dashboard Manager - 작업 기록 및 전표 미리보기
 // ================================================== //
 
+import { WorkspacesService } from '../common/services/workspacesService.js';
+import { showSuccess, showError } from '../common/ui/notifications.js';
+import { getBaseUrl } from '../common/config.js';
+
 class DashboardManager {
   constructor() {
     this.workspaces = [];
     this.journals = [];
     this.isExpanded = false;
-    this.apiBaseUrl = 'http://localhost:8000'; // 백엔드 API 기본 URL
     
     this.init();
   }
@@ -85,14 +88,19 @@ class DashboardManager {
       // 백엔드 API에서 Workspace 목록 조회
       const backendWorkspaces = await this.fetchWorkspaces();
       
+      // 디버깅: 받아온 데이터 구조 확인
+      console.log('🔍 백엔드에서 받은 워크스페이스 데이터:', backendWorkspaces);
+      console.log('🔍 첫 번째 워크스페이스 구조:', backendWorkspaces[0]);
+      
       // 백엔드 데이터를 프론트엔드 형식으로 변환
+      // list_workspaces()는 워크스페이스 정보 객체 배열을 반환
       this.workspaces = backendWorkspaces.map(workspace => ({
-        id: workspace.workspaceName, // 백엔드의 workspaceName을 id로 사용
-        title: workspace.workspaceName,
-        status: 'active', // 기본값으로 active 설정
-        createdAt: new Date().toISOString(), // 현재 시간으로 설정
-        periodStart: workspace.period?.periodStart,
-        periodEnd: workspace.period?.periodEnd
+        id: workspace.workspace_name,
+        title: workspace.workspace_name,
+        status: workspace.status || 'active',
+        createdAt: workspace.created_at ? new Date(workspace.created_at).toISOString() : new Date().toISOString(),
+        periodStart: null, // 별도 API로 조회 필요
+        periodEnd: null
       }));
       
       // 빈 Workspace 카드를 첫 번째에 추가 (새로 생성할 수 있도록)
@@ -119,9 +127,11 @@ class DashboardManager {
       this.loadDummyJournals();
       
       console.log('✅ 백엔드 Workspace 목록 로드 완료:', this.workspaces.length);
+      showSuccess('워크스페이스 목록을 성공적으로 로드했습니다.');
       
     } catch (error) {
       console.error('❌ 백엔드 Workspace 로딩 실패:', error);
+      showError(`워크스페이스 목록 로드 실패: ${error.message}`);
       
       // 백엔드 연결 실패 시 기존 더미 데이터 사용
       console.log('🔄 더미 데이터로 폴백...');
@@ -543,13 +553,8 @@ class DashboardManager {
     try {
       console.log('🔄 백엔드에 Workspace 생성 요청 중...');
       
-      // 기본 기간 설정 (현재 월의 시작과 끝)
-      const now = new Date();
-      const periodStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-      const periodEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()}`;
-      
       // 백엔드 API 호출하여 Workspace 생성
-      const result = await this.createWorkspaceAPI(title, periodStart, periodEnd);
+      const result = await this.createWorkspaceAPI(title);
       
       console.log('✅ 백엔드 Workspace 생성 완료:', result);
       
@@ -622,35 +627,32 @@ class DashboardManager {
   // Workspace 목록 조회
   async fetchWorkspaces() {
     try {
-      const response = await fetch(`${this.apiBaseUrl}/workspaces`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const result = await response.json();
-      if (result.ok && result.data && result.data.workspaces) {
-        return result.data.workspaces;
-      } else {
-        throw new Error('Invalid response format');
-      }
+      console.log('🔄 백엔드 API에서 워크스페이스 목록 조회 중...');
+      const workspaces = await WorkspacesService.list();
+      console.log('✅ 워크스페이스 목록 조회 성공:', workspaces);
+      return workspaces;
     } catch (error) {
       console.error('❌ Workspace 목록 조회 실패:', error);
+      showError(`워크스페이스 목록 조회 실패: ${error.message}`);
       throw error;
     }
   }
 
-  // Workspace 생성
-  async createWorkspaceAPI(workspaceName, periodStart, periodEnd) {
+  // Workspace 생성 (A-1)
+  async createWorkspaceAPI(workspaceName) {
     try {
-      const response = await fetch(`${this.apiBaseUrl}/workspaces`, {
+      const baseUrl = getBaseUrl();
+      if (!baseUrl) {
+        throw new Error('BASE_URL이 설정되지 않았습니다. 설정 페이지에서 API 서버 URL을 설정해주세요.');
+      }
+      
+      const response = await fetch(`${baseUrl}/workspaces`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          workspaceName: workspaceName,
-          periodStart: periodStart,
-          periodEnd: periodEnd
+          workspaceName: workspaceName
         })
       });
       
@@ -663,7 +665,7 @@ class DashboardManager {
       if (result.ok && result.data) {
         return result.data;
       } else {
-        throw new Error('Invalid response format');
+        throw new Error(result.error || 'Invalid response format');
       }
     } catch (error) {
       console.error('❌ Workspace 생성 실패:', error);

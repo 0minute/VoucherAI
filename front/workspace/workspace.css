@@ -921,3 +921,171 @@
     max-width: 300px;
   }
 }
+
+/* ================================================== */
+/* 파일 업로드 상태 스타일 */
+/* ================================================== */
+
+.data-table tbody tr.uploading {
+  background-color: #fff3cd;
+  border-left: 3px solid #ffc107;
+}
+
+.data-table tbody tr.completed {
+  background-color: #d1edff;
+  border-left: 3px solid #0066cc;
+}
+
+.data-table tbody tr.failed {
+  background-color: #f8d7da;
+  border-left: 3px solid #dc3545;
+}
+
+.data-table tbody tr.uploading td {
+  color: #856404;
+}
+
+.data-table tbody tr.completed td {
+  color: #004085;
+}
+
+.data-table tbody tr.failed td {
+  color: #721c24;
+}
+
+/* 업로드 상태 아이콘 */
+.data-table tbody tr.uploading .file-name::before {
+  content: "⏳ ";
+  margin-right: 0.25rem;
+}
+
+.data-table tbody tr.completed .file-name::before {
+  content: "✅ ";
+  margin-right: 0.25rem;
+}
+
+.data-table tbody tr.failed .file-name::before {
+  content: "❌ ";
+  margin-right: 0.25rem;
+}
+
+/* ================================================== */
+/* 분개 테이블 스타일 */
+/* ================================================== */
+
+.journal-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.journal-row:hover {
+  background-color: #f8f9fa;
+}
+
+.journal-row.selected {
+  background-color: #e3f2fd;
+  border-left: 3px solid #2196f3;
+}
+
+/* ================================================== */
+/* 이미지 모달 스타일 */
+/* ================================================== */
+
+.image-modal-content {
+  max-width: 90vw;
+  max-height: 90vh;
+  width: auto;
+  height: auto;
+}
+
+.image-modal-body {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 100%;
+  max-height: 80vh;
+  overflow: hidden;
+}
+
+.image-info {
+  padding: 1rem;
+  text-align: center;
+  background: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  width: 100%;
+}
+
+/* ================================================== */
+/* 수정 모달 스타일 */
+/* ================================================== */
+
+.edit-modal-content {
+  max-width: 800px;
+  width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.edit-modal-body {
+  padding: 1.5rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.form-input:invalid {
+  border-color: #dc3545;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .image-modal-content {
+    max-width: 95vw;
+    max-height: 95vh;
+  }
+  
+  .edit-modal-content {
+    max-width: 95vw;
+    width: 95vw;
+  }
+}
