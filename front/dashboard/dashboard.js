@@ -143,8 +143,12 @@ class DashboardManager {
   loadFallbackWorkspaces() {
     console.log('🔄 실제 workspace 폴더에서 데이터 로드 중...');
     
+    // localStorage에서 변경된 워크스페이스 이름들 가져오기
+    const customNames = JSON.parse(localStorage.getItem('workspaceNames') || '{}');
+    console.log('💾 localStorage에서 읽은 커스텀 이름들:', customNames);
+    
     // 실제 workspace 폴더에 있는 폴더들을 하드코딩으로 추가
-    this.workspaces = [
+    const baseWorkspaces = [
       {
         id: 'empty',
         title: '',
@@ -188,6 +192,20 @@ class DashboardManager {
         createdAt: '2025-08-28T00:00Z'
       }
     ];
+    
+    // 커스텀 이름이 있으면 적용
+    this.workspaces = baseWorkspaces.map(workspace => {
+      if (workspace.id === 'empty') return workspace;
+      
+      if (customNames[workspace.id]) {
+        return {
+          ...workspace,
+          title: customNames[workspace.id],
+          originalId: workspace.id // 원래 폴더명 보존
+        };
+      }
+      return workspace;
+    });
     
     localStorage.setItem('workspaces', JSON.stringify(this.workspaces));
     this.renderWorkspaceGrid();
@@ -591,6 +609,12 @@ class DashboardManager {
         periodStart: result.period?.periodStart,
         periodEnd: result.period?.periodEnd
       };
+      
+      // localStorage에 새 워크스페이스 이름 저장
+      const workspaceNames = JSON.parse(localStorage.getItem('workspaceNames') || '{}');
+      workspaceNames[result.workspaceName] = result.workspaceName;
+      localStorage.setItem('workspaceNames', JSON.stringify(workspaceNames));
+      console.log('💾 새 워크스페이스 이름을 localStorage에 저장:', workspaceNames);
       
       // 첫 번째 카드(빈 카드)를 새로 생성된 workspace로 교체
       this.workspaces[0] = newWorkspace;

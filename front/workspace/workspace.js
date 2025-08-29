@@ -32,12 +32,6 @@ setupAPI() {
   };
 }
 
-getWorkspaceNameFromURL() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const workspaceTitle = urlParams.get('title');
-  return workspaceTitle || 'default';
-}
-
   init() {
     this.setupAPI();
     this.setupEventListeners();
@@ -75,16 +69,44 @@ getWorkspaceNameFromURL() {
     // 분개 생성 버튼
     const btnGenerateJournal = document.getElementById('btn-generate-journal');
     if (btnGenerateJournal) {
+      console.log('✅ 분개 생성 버튼 이벤트 리스너 연결됨');
       btnGenerateJournal.addEventListener('click', () => {
+        console.log('🔘 분개 생성 버튼 클릭됨');
         this.generateJournal();
       });
+    } else {
+      console.warn('⚠️ 분개 생성 버튼을 찾을 수 없습니다');
+    }
+
+    // 분개 새로고침 버튼
+    const btnRefreshJournal = document.getElementById('btn-refresh-journal');
+    if (btnRefreshJournal) {
+      console.log('✅ 분개 새로고침 버튼 이벤트 리스너 연결됨');
+      btnRefreshJournal.addEventListener('click', () => {
+        console.log('🔘 분개 새로고침 버튼 클릭됨');
+        this.refreshJournal();
+      });
+    } else {
+      console.warn('⚠️ 분개 새로고침 버튼을 찾을 수 없습니다');
+    }
+
+    // Project명 수정 버튼
+    const btnEditProject = document.getElementById('btn-edit-project');
+    if (btnEditProject) {
+      console.log('✅ Project명 수정 버튼 이벤트 리스너 연결됨');
+      btnEditProject.addEventListener('click', () => {
+        console.log('🔘 Project명 수정 버튼 클릭됨');
+        this.editProjectName();
+      });
+    } else {
+      console.warn('⚠️ Project명 수정 버튼을 찾을 수 없습니다');
     }
 
     // 윈도우 리사이즈
-    window.addEventListener('resize', debounce(() => {
+    window.addEventListener('resize', () => {
       this.isMobile = window.innerWidth <= 768;
       this.handleResize();
-    }, 250));
+    });
   }
 
   // ================================================== //
@@ -967,12 +989,72 @@ getStatusHTML(status, message) {
   }
 
   // ================================================== //
+  // Project명 수정 함수
+  // ================================================== //
+  
+  async editProjectName() {
+    try {
+      const currentTitle = document.getElementById('workspace-title-text');
+      if (!currentTitle) {
+        console.warn('워크스페이스 제목 요소를 찾을 수 없습니다.');
+        return;
+      }
+
+      const currentName = currentTitle.textContent.trim();
+      console.log('🔧 현재 프로젝트명:', currentName);
+
+      // 간단한 prompt로 새 이름 입력받기
+      const newName = prompt('새로운 프로젝트명을 입력하세요:', currentName);
+      
+      if (newName && newName.trim() && newName.trim() !== currentName) {
+        const trimmedName = newName.trim();
+        console.log('🔄 프로젝트명 변경 시작:', currentName, '→', trimmedName);
+        
+        // DOM 업데이트
+        currentTitle.textContent = trimmedName;
+        
+        // URL 파라미터 업데이트 (title 파라미터)
+        const url = new URL(window.location);
+        url.searchParams.set('title', trimmedName);
+        window.history.replaceState({}, '', url);
+        
+        // localStorage에 변경된 이름 저장 (Dashboard에서 읽어올 수 있도록)
+        const workspaceId = this.getWorkspaceNameFromURL();
+        if (workspaceId) {
+          const workspaceNames = JSON.parse(localStorage.getItem('workspaceNames') || '{}');
+          workspaceNames[workspaceId] = trimmedName;
+          localStorage.setItem('workspaceNames', JSON.stringify(workspaceNames));
+          console.log('💾 localStorage에 워크스페이스 이름 저장:', workspaceNames);
+        }
+        
+        // 성공 메시지
+        window.toast?.show('success', '프로젝트명 수정 완료', 
+          `프로젝트명이 "${trimmedName}"으로 변경되었습니다. Dashboard에서 새로고침하면 반영됩니다.`);
+        
+        console.log('✅ 프로젝트명 수정 완료 (localStorage 저장)');
+        
+      } else if (newName === null) {
+        console.log('🚫 프로젝트명 수정 취소됨');
+      } else {
+        console.log('ℹ️ 프로젝트명이 변경되지 않음');
+      }
+      
+    } catch (error) {
+      console.error('❌ 프로젝트명 수정 실패:', error);
+      window.toast?.show('error', '프로젝트명 수정 실패', error.message);
+    }
+  }
+
+  // ================================================== //
   // 분개 생성 함수
   // ================================================== //
   
   async generateJournal() {
     try {
+      console.log('🔄 generateJournal 함수 시작');
+      
       const workspaceName = this.getWorkspaceNameFromURL();
+      console.log('🔍 워크스페이스 이름:', workspaceName);
       
       if (!workspaceName) {
         throw new Error('워크스페이스 정보를 찾을 수 없습니다.');
@@ -982,20 +1064,42 @@ getStatusHTML(status, message) {
       window.toast?.show('info', 'OCR 처리 중', '업로드된 이미지들을 OCR 처리하고 분개를 생성 중입니다...');
       
       const baseUrl = getBaseUrl();
-      const response = await fetch(`${baseUrl}/workspaces/${workspaceName}/pipeline/ocr-journal`, {
-        method: 'POST',
-        headers: this.apiHeaders
+      console.log('🌐 baseUrl:', baseUrl);
+      console.log('📡 API 호출:', `${baseUrl}/workspaces/${workspaceName}/pipeline/ocr-journal`);
+      
+      const response = await fetch(`${baseUrl}/workspaces/${encodeURIComponent(workspaceName)}/pipeline/ocr-journal`, {
+        method: 'POST'
       });
   
+      console.log('📡 응답 상태:', response.status, response.statusText);
+      
       if (!response.ok) {
-        throw new Error(`OCR 처리 실패: ${response.statusText}`);
+        // 응답 본문에서 더 자세한 에러 정보 가져오기
+        let errorDetail = response.statusText;
+        try {
+          const errorResponse = await response.json();
+          if (errorResponse.detail) {
+            errorDetail = errorResponse.detail;
+          }
+        } catch (e) {
+          console.log('에러 응답 파싱 실패:', e);
+        }
+        
+        throw new Error(`OCR 처리 실패 (${response.status}): ${errorDetail}`);
       }
   
       const result = await response.json();
+      console.log('📡 응답 결과:', result);
       
       if (result.ok) {
         const journalEntries = result.data?.journal || [];
         console.log('✅ 분개 생성 완료:', journalEntries);
+        
+        // 분개 테이블에 표시
+        this.displayJournalEntries(journalEntries);
+        
+        // 상태 정보 표시
+        this.updateJournalStatus(result.data);
         
         window.toast?.show('success', '분개 생성 완료', 
           `${journalEntries.length}개의 분개가 성공적으로 생성되었습니다.`);
@@ -1009,8 +1113,13 @@ getStatusHTML(status, message) {
       console.error('❌ 분개 생성 실패:', error);
       
       let errorMessage = error.message || '알 수 없는 오류가 발생했습니다.';
-      if (error.status === 500) {
-        errorMessage = '서버에서 오류가 발생했습니다. 업로드된 파일이 있는지 확인해주세요.';
+      
+      // 서버 에러인 경우 더 구체적인 메시지
+      if (error.message.includes('500') || error.message.includes('Internal Server Error')) {
+        errorMessage = '서버에서 OCR 처리 중 오류가 발생했습니다. 다음을 확인해주세요:\n\n' +
+          '1. 업로드된 파일이 이미지/PDF 형식인지 확인\n' +
+          '2. 파일 크기가 너무 크지 않은지 확인\n' +
+          '3. 잠시 후 다시 시도해보세요';
       }
       
       window.toast?.show('error', '분개 생성 실패', errorMessage);
@@ -1137,6 +1246,196 @@ getStatusHTML(status, message) {
     
     console.log('🔍 추출된 워크스페이스 이름:', workspaceName);
     return workspaceName;
+  }
+
+  // ================================================== //
+  // 분개 관련 함수들
+  // ================================================== //
+
+  // 분개 새로고침
+  async refreshJournal() {
+    try {
+      const workspaceName = this.getWorkspaceNameFromURL();
+      if (!workspaceName) {
+        throw new Error('워크스페이스 이름을 찾을 수 없습니다.');
+      }
+
+      console.log('🔄 분개 새로고침 중...');
+      
+      const baseUrl = getBaseUrl();
+      const response = await fetch(`${baseUrl}/workspaces/${encodeURIComponent(workspaceName)}/journal/refresh`, {
+        method: 'POST'
+      });
+
+      if (!response.ok) {
+        throw new Error(`분개 새로고침 실패: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.ok) {
+        const journalEntries = result.data?.journal || [];
+        console.log('✅ 분개 새로고침 완료:', journalEntries);
+        
+        this.displayJournalEntries(journalEntries);
+        window.toast?.show('success', '분개 새로고침 완료', 
+          `${journalEntries.length}개의 분개가 새로고침되었습니다.`);
+      } else {
+        throw new Error(result.error || '분개 새로고침 실패');
+      }
+      
+    } catch (error) {
+      console.error('❌ 분개 새로고침 실패:', error);
+      window.toast?.show('error', '분개 새로고침 실패', error.message);
+    }
+  }
+
+  // 분개 테이블에 데이터 표시
+  displayJournalEntries(journalEntries) {
+    const tbody = document.getElementById('journal-rows');
+    if (!tbody) {
+      console.error('❌ 분개 테이블 tbody를 찾을 수 없습니다.');
+      return;
+    }
+
+    // 기존 내용 제거
+    tbody.innerHTML = '';
+
+    if (!journalEntries || journalEntries.length === 0) {
+      tbody.innerHTML = '<tr class="journal-empty-row"><td colspan="9" class="empty-message">분개 데이터가 없습니다</td></tr>';
+      return;
+    }
+
+    // 분개 데이터로 테이블 채우기
+    journalEntries.forEach((entry, index) => {
+      const row = document.createElement('tr');
+      row.className = 'journal-row';
+      row.setAttribute('data-index', index);
+      
+      // 분개 데이터 컬럼에 맞춰 표시
+      row.innerHTML = `
+        <td>${entry.전표번호 || '-'}</td>
+        <td>${entry.전표일자 || '-'}</td>
+        <td>${entry.계정과목명 || '-'}</td>
+        <td>${entry['차변/대변구분'] || '-'}</td>
+        <td>${entry['금액(원화)'] ? entry['금액(원화)'].toLocaleString() : '-'}</td>
+        <td>${entry.거래처명 || '-'}</td>
+        <td>${entry.적요 || '-'}</td>
+        <td>${entry.프로젝트코드 || '-'}</td>
+        <td>
+          <button type="button" class="btn-ghost btn-sm view-original" data-file-id="${entry.file_id || ''}">
+            원본
+          </button>
+        </td>
+      `;
+
+      // 원본 버튼 이벤트 리스너
+      const viewOriginalBtn = row.querySelector('.view-original');
+      if (viewOriginalBtn) {
+        viewOriginalBtn.addEventListener('click', () => {
+          this.viewOriginalImage(entry.file_id);
+        });
+      }
+
+      // 행 더블클릭 시 편집 모달 열기
+      row.addEventListener('dblclick', () => {
+        this.openEditJournalModal(entry, index);
+      });
+
+      tbody.appendChild(row);
+    });
+
+    console.log(`✅ ${journalEntries.length}개 분개 데이터 표시 완료`);
+  }
+
+  // 분개 상태 업데이트
+  updateJournalStatus(data) {
+    const statusContainer = document.getElementById('journal-status');
+    if (!statusContainer) return;
+
+    // OCR, LLM, 시각화 상태 표시
+    const ocrStatus = document.getElementById('ocr-status');
+    const llmStatus = document.getElementById('llm-status');
+    const vizStatus = document.getElementById('viz-status');
+
+    if (ocrStatus) {
+      const ocrCount = data.ocrResults?.length || 0;
+      ocrStatus.textContent = `OCR: ${ocrCount}개`;
+    }
+
+    if (llmStatus) {
+      const llmCount = data.llmResults?.length || 0;
+      llmStatus.textContent = `LLM: ${llmCount}개`;
+    }
+
+    if (vizStatus) {
+      const vizCount = data.visualizations ? Object.keys(data.visualizations).length : 0;
+      vizStatus.textContent = `시각화: ${vizCount}개`;
+    }
+
+    // 상태 컨테이너 표시
+    statusContainer.style.display = 'block';
+  }
+
+  // 원본 이미지 보기
+  async viewOriginalImage(fileId) {
+    try {
+      const workspaceName = this.getWorkspaceNameFromURL();
+      if (!workspaceName) {
+        throw new Error('워크스페이스 이름을 찾을 수 없습니다.');
+      }
+
+      console.log('🖼️ 원본 이미지 로드 중:', fileId);
+      
+      const baseUrl = getBaseUrl();
+      const response = await fetch(`${baseUrl}/workspaces/${encodeURIComponent(workspaceName)}/visualizations/${encodeURIComponent(fileId)}`);
+
+      if (!response.ok) {
+        throw new Error(`이미지 로드 실패: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.ok && result.data?.imageUrl) {
+        this.showImageModal(result.data.imageUrl, fileId);
+      } else {
+        throw new Error('이미지 URL을 찾을 수 없습니다.');
+      }
+      
+    } catch (error) {
+      console.error('❌ 원본 이미지 로드 실패:', error);
+      window.toast?.show('error', '이미지 로드 실패', error.message);
+    }
+  }
+
+  // 이미지 모달 표시
+  showImageModal(imageUrl, fileName) {
+    const modal = document.getElementById('image-modal');
+    if (!modal) {
+      console.error('❌ 이미지 모달을 찾을 수 없습니다.');
+      return;
+    }
+
+    const modalImage = modal.querySelector('.modal-image');
+    const modalTitle = modal.querySelector('.modal-title');
+    
+    if (modalImage) {
+      modalImage.src = imageUrl;
+      modalImage.alt = fileName || '원본 이미지';
+    }
+    
+    if (modalTitle) {
+      modalTitle.textContent = fileName || '원본 이미지';
+    }
+
+    modal.style.display = 'block';
+  }
+
+  // 분개 편집 모달 열기 (플레이스홀더)
+  openEditJournalModal(entry, index) {
+    console.log('📝 분개 편집 모달 열기:', entry, index);
+    // TODO: 분개 편집 모달 구현
+    window.toast?.show('info', '기능 준비 중', '분개 편집 기능은 준비 중입니다.');
   }
 }
 

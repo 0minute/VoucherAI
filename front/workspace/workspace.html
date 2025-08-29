@@ -244,20 +244,22 @@
                         </div>
                     </div>
 
-                    <!-- Journal Section -->
+                    <!-- 분개 생성 섹션 -->
                     <section id="journal-section" class="content-section">
                         <div class="section-header">
-                            <h2> 분개 생성 </h2>
-                            <p>각 분개를 더블클릭하면 원본 정보를 수정할 수 있습니다 </p>
+                            <h2>분개 생성</h2>
+                            <p>업로드된 파일들을 OCR 처리하여 분개를 생성합니다</p>
                         </div>
                         
                         <!-- 분개 생성 버튼 -->
                         <div class="journal-controls">
                             <button type="button" id="btn-generate-journal" class="btn-primary" data-testid="btn-generate-journal">
+                                <i class="fas fa-magic"></i>
                                 분개 생성
                             </button>
-                            <button type="button" id="btn-confirm-journal" class="btn-ghost" data-testid="btn-confirm-journal">
-                                분개 확정
+                            <button type="button" id="btn-refresh-journal" class="btn-ghost" data-testid="btn-refresh-journal">
+                                <i class="fas fa-sync-alt"></i>
+                                분개 새로고침
                             </button>
                         </div>
 
@@ -266,36 +268,41 @@
                             <table class="journal-table" data-testid="journal-table" aria-label="분개 결과 목록">
                                 <thead>
                                     <tr>
-                                        <th style="min-width:100px">날짜</th>
-                                        <th style="min-width:120px">거래처</th>
-                                        <th style="min-width:100px">금액</th>
-                                        <th style="min-width:80px">유형</th>
-                                        <th style="min-width:120px">사업자등록번호</th>
-                                        <th style="min-width:100px">대표자</th>
-                                        <th style="min-width:200px">주소</th>
-                                        <th style="min-width:100px">증빙유형</th>
+                                        <th style="min-width:80px">전표번호</th>
+                                        <th style="min-width:100px">전표일자</th>
                                         <th style="min-width:120px">계정과목</th>
-                                        <th style="min-width:100px">계정코드</th>
-                                        <th style="min-width:120px">프로젝트명</th>
-                                        <th style="min-width:100px">거래처코드</th>
+                                        <th style="min-width:100px">차변/대변구분</th>
+                                        <th style="min-width:100px">금액(원화)</th>
                                         <th style="min-width:120px">거래처명</th>
+                                        <th style="min-width:200px">적요</th>
+                                        <th style="min-width:100px">프로젝트코드</th>
+                                        <th style="min-width:80px">원본</th>
                                     </tr>
                                 </thead>
                                 <tbody id="journal-rows">
                                     <!-- 빈 행들 -->
                                     <tr class="journal-empty-row">
-                                        <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
-                                    </tr>
-                                    <tr class="journal-empty-row">
-                                        <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
-                                    </tr>
-                                    <tr class="journal-empty-row">
-                                        <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+                                        <td colspan="9" class="empty-message">분개를 생성해주세요</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
 
+                        <!-- 분개 상태 표시 -->
+                        <div class="journal-status" id="journal-status" style="display: none;">
+                            <div class="status-item">
+                                <span class="status-label">OCR 결과:</span>
+                                <span class="status-value" id="ocr-status">-</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">LLM 결과:</span>
+                                <span class="status-value" id="llm-status">-</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">시각화:</span>
+                                <span class="status-value" id="viz-status">-</span>
+                            </div>
+                        </div>
                     </section>
                 </section>
             </div>

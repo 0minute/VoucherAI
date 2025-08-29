@@ -645,7 +645,7 @@ def run_ocr_and_journal(workspaceName: str):
         uploaded_files: list[str] = get_uploaded_files_path(workspaceName)  # 내부 구현
         ocr_results_l, llm_results_l, journal_entry_l = [], [], []
         visualization_d: Dict[str, str] = {}
-        initialize_voucher_data(workspaceName, True)
+        initialize_voucher_data(workspaceName)
         for file in uploaded_files:
             ocr_result = ocr_image_and_save_json_by_extension(file)
             if not ocr_result:
