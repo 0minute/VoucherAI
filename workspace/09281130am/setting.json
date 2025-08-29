@@ -1,0 +1,30 @@
+{
+  "workspace_name": "09281130am",
+  "version": 2,
+  "created_at": "2025-08-29T02:30:22.270166Z",
+  "updated_at": "2025-08-29T02:30:34.701860Z",
+  "paths": {
+    "input_dir": "C:\\Users\\skimz036\\Desktop\\AX Node\\VoucherAI\\workspace\\09281130am\\input_files",
+    "intermediate_dir": "C:\\Users\\skimz036\\Desktop\\AX Node\\VoucherAI\\workspace\\09281130am\\intermediate",
+    "ocr_dir": "C:\\Users\\skimz036\\Desktop\\AX Node\\VoucherAI\\workspace\\09281130am\\intermediate\\ocr_results",
+    "llm_dir": "C:\\Users\\skimz036\\Desktop\\AX Node\\VoucherAI\\workspace\\09281130am\\intermediate\\llm_results",
+    "journal_dir": "C:\\Users\\skimz036\\Desktop\\AX Node\\VoucherAI\\workspace\\09281130am\\intermediate\\journal_entries",
+    "final_output_dir": "C:\\Users\\skimz036\\Desktop\\AX Node\\VoucherAI\\workspace\\09281130am\\final_output",
+    "logs_dir": "C:\\Users\\skimz036\\Desktop\\AX Node\\VoucherAI\\workspace\\09281130am\\logs"
+  },
+  "meta": {
+    "target_period": "",
+    "line_count": 0
+  },
+  "files": {
+    "uploaded": [
+      "workspace\\09281130am\\input_files\\R-1.png",
+      "workspace\\09281130am\\input_files\\TI-1.png"
+    ],
+    "ocr_results": [],
+    "llm_results": [],
+    "visualization": {},
+    "journal_drafts": [],
+    "final_artifacts": []
+  }
+}

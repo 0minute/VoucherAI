@@ -1,0 +1,33 @@
+{
+  "version": 4,
+  "updated_at": "2025-08-28T18:11:51.285029Z",
+  "files": [
+    {
+      "rel": "workspace\\workspace.html\\input_files\\TI-1.png",
+      "project": null,
+      "excluded": false,
+      "size": 2011941,
+      "mime": "image/png",
+      "created_at": "2025-08-28T17:28:44.380963Z",
+      "updated_at": "2025-08-28T17:28:44.380979Z"
+    },
+    {
+      "rel": "workspace\\workspace.html\\input_files\\R-1.png",
+      "project": null,
+      "excluded": false,
+      "size": 1364854,
+      "mime": "image/png",
+      "created_at": "2025-08-28T18:08:31.561909Z",
+      "updated_at": "2025-08-28T18:08:31.561921Z"
+    },
+    {
+      "rel": "workspace\\workspace.html\\input_files\\page_001.png",
+      "project": null,
+      "excluded": false,
+      "size": 354696,
+      "mime": "image/png",
+      "created_at": "2025-08-28T18:11:51.285010Z",
+      "updated_at": "2025-08-28T18:11:51.285023Z"
+    }
+  ]
+}
