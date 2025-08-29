@@ -4,7 +4,7 @@
     "ocr_summary": {
         "text_count": 77,
         "average_confidence": 0.966350396345188,
-        "processing_time": 25.681121349334717,
+        "processing_time": 32.844216108322144,
         "image_size": [
             1300,
             913
@@ -2903,12 +2903,12 @@
         }
     },
     "extraction_metadata": {
-        "extraction_time": "2025-08-28T17:50:19.252956",
+        "extraction_time": "2025-08-29T14:42:31.301713",
         "processing_successful": true,
         "text_boxes_count": 77,
         "total_characters": 428,
         "avg_confidence": 0.966350396345188,
-        "processing_time": 25.681121349334717,
+        "processing_time": 32.844216108322144,
         "image_size": [
             1300,
             913

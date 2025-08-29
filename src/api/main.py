@@ -21,7 +21,12 @@ from src.api.constants import (get_setting_file,
                                get_central_db_path)
 from src.api.models.upload_models import UploadFileRow, compute_file_meta, UploadsIndexRepository, get_uploads_repo
 from src.ant.llm_main import extract_with_locations, draw_overlays
-from src.entjournal.journal_main import get_json_wt_one_value_from_extract_invoice_fields, drop_source_id_from_json, make_journal_entry, make_journal_entry_to_record_list
+from src.entjournal.journal_main import (get_json_wt_one_value_from_extract_invoice_fields, 
+                                         drop_source_id_from_json, 
+                                         make_journal_entry, 
+                                         make_journal_entry_to_record_list,
+                                         sap_view,
+                                         dzone_view)
 from pathlib import Path
 from typing import Union, Iterable
 from src.api.utils import _now_iso, fs_to_static_url
@@ -697,10 +702,15 @@ def run_ocr_and_journal(workspaceName: str):
         add_llm_results(workspaceName, llm_results_l)
         add_visualization(workspaceName, visualization_d)
 
+        #시연용으로 더존만 내림
+
+        sap_journal_entry_l = sap_view(journal_entry_l)
+        dzone_journal_entry_l = dzone_view(journal_entry_l)
+
         jpath = os.path.join(get_journal_path(workspaceName), "journal_entry.json")
         Path(os.path.dirname(jpath)).mkdir(parents=True, exist_ok=True)
         with open(jpath, "w", encoding="utf-8") as f:
-            json.dump(journal_entry_l, f, ensure_ascii=False, indent=4)
+            json.dump(dzone_journal_entry_l, f, ensure_ascii=False, indent=4)
         add_journal_drafts(workspaceName, [jpath])
 
         # 시각화 경로는 /static URL도 같이 내려주자
@@ -715,7 +725,7 @@ def run_ocr_and_journal(workspaceName: str):
                 "llmResults": llm_results_l,
                 "journalPath": jpath,
                 "visualizations": viz_for_front,
-                "journal": journal_entry_l
+                "journal": dzone_journal_entry_l
             },
             error=None,
             ts=_now_iso()
@@ -824,4 +834,6 @@ if __name__ == "__main__":
     # get_voucher_data_api("wshopp", "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\wshopp\\input_files\\HUNTRIX.png")
     # refresh_journal_entries_api("wshopp")
     # get_visualization_image_path_api("wshopp","visualizations/workspace/wshopp/input_files/HUNTRIX.png")
-    archive_journal_entry_api("wshopp")
+    # archive_journal_entry_api("wshopp")
+    run_ocr_and_journal("wshopp")
+    print("done")
