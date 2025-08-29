@@ -92,8 +92,8 @@ def test_create_journal_entry():
 
 if __name__ == "__main__":
     # test_ocr_image()
-    # test_llm_parse()
+    test_llm_parse()
     # test_visualization()
-    test_create_journal_entry()
+    # test_create_journal_entry()
 
 

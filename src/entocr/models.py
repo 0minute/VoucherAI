@@ -63,6 +63,9 @@ class OCRResult(BaseModel):
         if not self.text_boxes:
             return 0.0
         return sum(box.confidence for box in self.text_boxes) / len(self.text_boxes)
+    
+    def replace_text_boxes(self, text_boxes: List[TextBox]) -> None:
+        self.text_boxes = text_boxes
 
 
 class ExtractionResult(BaseModel):

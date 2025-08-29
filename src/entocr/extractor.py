@@ -236,8 +236,11 @@ class ImageDataExtractor:
         
         try:
             # Perform OCR
+            # 디텍션 수행 > 텍스트 정보는 사용하지 않음.
             ocr_result = self.ocr_service.extract_text(image_path)
             
+            
+
             if not ocr_result.text_boxes:
                 logger.warning(f"No text detected in image: {image_path}")
                 return ExtractionResult(

@@ -23,6 +23,10 @@ def get_available_models():
             "model": "openai.gpt-4o-2024-11-20",
             "memo": "최신 4o 모델, 이미지+텍스트 멀티모달 처리와 추론 균형이 뛰어나 OCR 교차검증과 정리에 최적"
         },
+        "gpt4o_latest_mini": {
+            "model": "openai.gpt-4o-mini",
+            "memo": "최신 4o-mini 모델, 속도/효율"
+        },
         "gpt41_latest": {
             "model": "openai.gpt-4.1-2025-04-14",
             "memo": "복잡한 규칙 기반 추론과 데이터 정합성 유지에 강함, 고난이도 문서 정리에 적합"
