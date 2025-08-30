@@ -4,14 +4,28 @@
 AP_ACCOUNT_NAME = "미지급금"
 AP_ACCOUNT_CODE = 25300
 COMPANY_NAME = "K-POPDEMONHUNTERS"
-PROJECT_NAME_GROUP = ["HUNTRIX"]
+PROJECT_NAME_GROUP = ["HUNTRIX 유닛 프로젝트", "SajaBoys 유닛 프로젝트"]
 ACCOUNT_NAME_TO_SPLIT = ["연예보조_의상ㆍ스타일링", "연예보조_화장ㆍ메이크업", "연예보조_촬영ㆍ영상", "연예보조_기타"]
-GROUP_MEMBERS = {"HUNTRIX":["루미","미라","조이"]}
+GROUP_MEMBERS = {"HUNTRIX 유닛 프로젝트":["루미 (HUNTRIX)","미라 (HUNTRIX)","조이 (HUNTRIX)"], "SajaBoys 유닛 프로젝트":["진우 (SajaBoys)","베이비 (SajaBoys)","미스터리 (SajaBoys)","로맨스 (SajaBoys)","애비 (SajaBoys)"]}
 # MANAGER_NAMES_AND_ARTIST = {"바비" : {"HUNTRIX":"GROUP","루미":"MEMBER","미라":"MEMBER","조이":"MEMBER"}}
-ARTIST_NAMES = ["루미","미라","조이"]
-GROUP_NAMES = ["HUNTRIX"]
+ARTIST_NAMES = ["루미 (HUNTRIX)","미라 (HUNTRIX)","조이 (HUNTRIX)","진우 (SajaBoys)","베이비 (SajaBoys)","미스터리 (SajaBoys)","로맨스 (SajaBoys)","애비 (SajaBoys)"]
+"""
+        { id: 'proj_1', name: '루미 (HUNTRIX)' },
+        { id: 'proj_2', name: '미라 (HUNTRIX)' },
+        { id: 'proj_3', name: '조이 (HUNTRIX)' },
+        { id: 'proj_4', name: '진우 (SajaBoys)' },
+        { id: 'proj_5', name: '베이비 (SajaBoys)' },
+        { id: 'proj_6', name: '미스터리 (SajaBoys)' },
+        { id: 'proj_7', name: '로맨스 (SajaBoys)' },
+        { id: 'proj_8', name: '애비 (SajaBoys)' },
+        { id: 'proj_9', name: 'HUNTRIX 유닛 프로젝트' },
+        { id: 'proj_10', name: 'SajaBoys 유닛 프로젝트' }
+
+"""
+
+GROUP_NAMES = ["HUNTRIX 유닛 프로젝트", "SajaBoys 유닛 프로젝트"]
 ALL_NAMES = ARTIST_NAMES + GROUP_NAMES
-PROJECT_NAME_TO_CODE = {"HUNTRIX":"HUNTRIX001", "루미":"HUNTRIX002", "미라":"HUNTRIX003", "조이":"HUNTRIX004"}
+PROJECT_NAME_TO_CODE = {"HUNTRIX 유닛 프로젝트":"HUNTRIX001", "루미 (HUNTRIX)":"HUNTRIX002", "미라 (HUNTRIX)":"HUNTRIX003", "조이 (HUNTRIX)":"HUNTRIX004", "진우 (SajaBoys)":"SajaBoys001", "베이비 (SajaBoys)":"SajaBoys002", "미스터리 (SajaBoys)":"SajaBoys003", "로맨스 (SajaBoys)":"SajaBoys004", "애비 (SajaBoys)":"SajaBoys005", "HUNTRIX 유닛 프로젝트":"HUNTRIX005", "SajaBoys 유닛 프로젝트":"SajaBoys006"}
     
 COLUMN_RULES_PATH = "data/column_rules.json"
 FIELD_SCHEMA_PATH = "data/field_schema.json"

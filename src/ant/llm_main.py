@@ -188,7 +188,7 @@ def _validate_and_coerce(data: Dict[str, Any]) -> None:
     # 날짜 정규화
     for item in data["날짜"]:
         ds = str(item["value"]).strip()
-        m = re.search(r"(19|20)\d{2}[-/.]?(0[1-9]|1[0-2])[-/.]?(0[1-9]|[12]\d|3[01])", ds)
+        m = re.search(r"((?:19|20)\d{2})[-/.]?(0[1-9]|1[0-2])[-/.]?(0[1-9]|[12]\d|3[01])", ds)
         if m:
             item["value"] = f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
 

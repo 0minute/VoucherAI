@@ -1,11 +1,11 @@
 {
-  "version": 2,
-  "updated_at": "2025-08-30T13:40:31.978302Z",
+  "version": 4,
+  "updated_at": "2025-08-30T13:45:32.978096Z",
   "files": [
     {
       "rel": "workspace\\KPOP2\\input_files\\KPOP.PNG",
       "project": null,
-      "excluded": false,
+      "excluded": "HUNTRIX 유닛 프로젝트",
       "size": 95960,
       "mime": "image/png",
       "created_at": "2025-08-30T13:40:31.978302Z",

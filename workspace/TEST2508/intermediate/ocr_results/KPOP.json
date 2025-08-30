@@ -1,10 +1,10 @@
 {
-    "source_image": "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\KPOP2\\input_files\\KPOP.PNG",
+    "source_image": "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\TEST2508\\input_files\\KPOP.png",
     "success": true,
     "ocr_summary": {
         "text_count": 76,
         "average_confidence": 0.9580758453199738,
-        "processing_time": 37.42352843284607,
+        "processing_time": 43.32168245315552,
         "image_size": [
             420,
             1000
@@ -2874,12 +2874,12 @@
         }
     },
     "extraction_metadata": {
-        "extraction_time": "2025-08-30T22:46:01.035510",
+        "extraction_time": "2025-08-31T00:28:31.900292",
         "processing_successful": true,
         "text_boxes_count": 76,
         "total_characters": 417,
         "avg_confidence": 0.9580758453199738,
-        "processing_time": 37.42352843284607,
+        "processing_time": 43.32168245315552,
         "image_size": [
             420,
             1000

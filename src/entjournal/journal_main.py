@@ -224,7 +224,7 @@ def make_journal_entry(json_data: list, erp: str = 'dz') -> dict:
         journal_entry = []
         credit_row = []
         artist_name = voucher_data["프로젝트명"]
-        credit_row.append(make_journal_line(voucher_data, journal_no, 1, now, artist_code, artist_name, voucher_data["금액"], file_id, "credit"))
+        credit_row.append(make_journal_line(voucher_data, journal_no + 1, 1, now, artist_code, artist_name, voucher_data["금액"], file_id, "credit"))
         
         line_number += 1
         # 차변 생성
@@ -236,10 +236,10 @@ def make_journal_entry(json_data: list, erp: str = 'dz') -> dict:
             amount_per_member = _round_krw(Decimal(voucher_data["금액"]) / len(members))
             for member in members:
                 member_code = PROJECT_NAME_TO_CODE[member]
-                debit_rows.append(make_journal_line(voucher_data, journal_no, line_number, now, member_code, member,amount_per_member, file_id, "debit"))
+                debit_rows.append(make_journal_line(voucher_data, journal_no + 1, line_number, now, member_code, member,amount_per_member, file_id, "debit"))
                 line_number += 1
         else:
-            debit_rows.append(make_journal_line(voucher_data, journal_no, line_number, now, artist_code, artist_name, voucher_data["금액"], file_id, "debit"))
+            debit_rows.append(make_journal_line(voucher_data, journal_no + 1, line_number, now, artist_code, artist_name, voucher_data["금액"], file_id, "debit"))
             line_number += 1
         journal_entry.extend(credit_row)
         journal_entry.extend(debit_rows)
@@ -301,7 +301,7 @@ def make_journal_line(voucher_data, journal_no, line_number, now, artist_code, a
           "프로젝트코드" : artist_code,
           "관리항목1" : None,
           "관리항목2" : None,
-          "사업자등록번호" : None, #voucher_data["사업자등록번호"],
+          "사업자등록번호" : voucher_data["사업자등록번호"],
           "증빙일" : voucher_data["날짜"],
           "참조번호" : None, #voucher_data["참조번호"]
           "손익센터" : None,
@@ -338,7 +338,7 @@ def make_journal_line(voucher_data, journal_no, line_number, now, artist_code, a
           "프로젝트코드" : artist_code,
           "관리항목1" : None,
           "관리항목2" : None,
-          "사업자등록번호" : None, #voucher_data["사업자등록번호"],
+          "사업자등록번호" : voucher_data["사업자등록번호"],
           "증빙일" : voucher_data["날짜"],
           "참조번호" : None,#voucher_data["참조번호"],
           "손익센터" : None,

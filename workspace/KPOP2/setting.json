@@ -1,8 +1,8 @@
 {
   "workspace_name": "KPOP2",
-  "version": 2,
+  "version": 10,
   "created_at": "2025-08-30T13:40:27.398307Z",
-  "updated_at": "2025-08-30T13:40:31.963066Z",
+  "updated_at": "2025-08-30T13:46:06.160995Z",
   "paths": {
     "input_dir": "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\KPOP2\\input_files",
     "intermediate_dir": "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\KPOP2\\intermediate",
@@ -20,10 +20,18 @@
     "uploaded": [
       "workspace\\KPOP2\\input_files\\KPOP.PNG"
     ],
-    "ocr_results": [],
-    "llm_results": [],
-    "visualization": {},
-    "journal_drafts": [],
+    "ocr_results": [
+      "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\KPOP2\\intermediate\\ocr_results\\KPOP.json"
+    ],
+    "llm_results": [
+      "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\KPOP2\\intermediate\\llm_results\\KPOP_data.json"
+    ],
+    "visualization": {
+      "KPOP.PNG": "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\KPOP2\\intermediate\\visualization\\KPOP_overlay.png"
+    },
+    "journal_drafts": [
+      "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\KPOP2\\intermediate\\journal_entries\\journal_entry.json"
+    ],
     "final_artifacts": []
   }
 }

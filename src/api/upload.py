@@ -16,6 +16,7 @@ import json
 import mimetypes
 from datetime import datetime
 from src.api.utils import _now_iso
+from loguru import logger
 
 DEFAULT_ALLOWED_EXT = (".png",".jpg",".jpeg",".pdf")
 
@@ -368,6 +369,29 @@ def get_uploaded_files_path(workspace_name: str) -> list[str]:
     uploaded_files = uploads_index.get("files", [])
     return [os.path.join(PROJECT_ROOT, file.get("rel")) for file in uploaded_files]
 
+def get_project_name(workspace_name: str, file_path: str) -> str:
+    uploads_index = _read_uploads_index(workspace_name)
+    uploaded_files = uploads_index.get("files", [])
+    for file in uploaded_files:
+        if _normalize_rel(file.get("rel")) == _normalize_rel(file_path):
+            return file.get("project")
+    return None
+# def patch_project_names(workspace_name: str, file_project_map: dict[str, str]) -> None:
+#     """
+#     파일명(file_path) → 프로젝트명(project_name) 매핑 딕셔너리를 받아서
+#     uploads_index.json 내 파일 메타데이터를 일괄 업데이트한다.
+#     """
+#     uploads_index = _read_uploads_index(workspace_name)
+#     uploaded_files = uploads_index.get("files", [])
+
+#     # 딕셔너리 조회를 빠르게 하기 위해 set/dict 활용
+#     for file in uploaded_files:
+#         rel_path = file.get("rel")
+#         if rel_path in file_project_map:
+#             file["project"] = file_project_map[rel_path]
+
+#     _write_uploads_index(workspace_name, uploads_index)
+
 def _write_uploads_index(workspace_name: str, data: dict) -> None:
     p = get_uploads_index_path(workspace_name)
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -516,6 +540,7 @@ def bulk_set_file_project(
     for rel, proj in mapping.items():
         if rel not in uploaded:
             # 업로드 외 항목은 무시 또는 예외 처리(여기선 무시)
+            logger.error(f"not_uploaded: {rel}")
             continue
         rec = rec_map.get(rel)
         if not rec:

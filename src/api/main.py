@@ -10,7 +10,15 @@ from src.api.workspace import (ensure_workspace,
                                add_llm_results, 
                                add_visualization, 
                                add_journal_drafts)
-from src.api.upload import upload_images_to_workspace, list_uploaded_files, extract_zip_to_workspace, set_files_excluded, bulk_set_file_project, remove_uploaded_files_setting, get_uploaded_files_path
+from src.api.upload import (upload_images_to_workspace, 
+                            list_uploaded_files,
+                            extract_zip_to_workspace, 
+                            set_files_excluded, 
+                            bulk_set_file_project, 
+                            remove_uploaded_files_setting, 
+                            get_uploaded_files_path,
+                            get_project_name,
+                            _normalize_rel)
 from src.api.constants import (get_setting_file, 
                                DEFAULT_ALLOWED_EXT, 
                                get_ocr_path, 
@@ -646,92 +654,93 @@ app.mount("/static", StaticFiles(directory=str(WORKSPACE_ROOT)), name="static")
 # === 1) OCR + LLM + 시각화 + 분개 파이프라인 실행 ===
 @app.post("/workspaces/{workspaceName}/pipeline/ocr-journal", response_model=ApiResponse)
 def run_ocr_and_journal(workspaceName: str):
-    try:
-        uploaded_files: list[str] = get_uploaded_files_path(workspaceName)  # 내부 구현
-        ocr_results_l, llm_results_l, journal_entry_l = [], [], []
-        visualization_d: Dict[str, str] = {}
-        initialize_voucher_data(workspaceName, True)
-        for file in uploaded_files:
-            ocr_result = ocr_image_and_save_json_by_extension(file)
-            if not ocr_result:
-                # 추후 서버 로깅 권장
-                continue
+    # try:
+    uploaded_files: list[str] = get_uploaded_files_path(workspaceName)  # 내부 구현
+    ocr_results_l, llm_results_l, journal_entry_l = [], [], []
+    visualization_d: Dict[str, str] = {}
+    initialize_voucher_data(workspaceName, True)
+    for file in uploaded_files:
+        ocr_result = ocr_image_and_save_json_by_extension(file)
+        if not ocr_result:
+            # 추후 서버 로깅 권장
+            continue
 
-            # OCR JSON 저장
-            ocr_dir = get_ocr_path(workspaceName)
-            Path(ocr_dir).mkdir(parents=True, exist_ok=True)
-            stem = Path(file).stem
-            ocr_json_path = os.path.join(ocr_dir, f"{stem}.json")
-            with open(ocr_json_path, "w", encoding="utf-8") as f:
-                json.dump(ocr_result, f, ensure_ascii=False, indent=4)
-            ocr_results_l.append(ocr_json_path)
+        # OCR JSON 저장
+        ocr_dir = get_ocr_path(workspaceName)
+        Path(ocr_dir).mkdir(parents=True, exist_ok=True)
+        stem = Path(file).stem
+        ocr_json_path = os.path.join(ocr_dir, f"{stem}.json")
+        with open(ocr_json_path, "w", encoding="utf-8") as f:
+            json.dump(ocr_result, f, ensure_ascii=False, indent=4)
+        ocr_results_l.append(ocr_json_path)
+        project_name = get_project_name(workspaceName, _normalize_rel(file))
 
-            # LLM 추출/저장
-            data, candidates, selections = extract_with_locations(ocr_result)
-            llm_dir = get_llm_path(workspaceName)
-            Path(llm_dir).mkdir(parents=True, exist_ok=True)
-            with open(os.path.join(llm_dir, f"{stem}_data.json"), "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=4)
-            with open(os.path.join(llm_dir, f"{stem}_candidates.json"), "w", encoding="utf-8") as f:
-                json.dump(candidates, f, ensure_ascii=False, indent=4)
-            with open(os.path.join(llm_dir, f"{stem}_selections.json"), "w", encoding="utf-8") as f:
-                json.dump(selections, f, ensure_ascii=False, indent=4)
-            llm_results_l.append(os.path.join(llm_dir, f"{stem}_data.json"))
+        # LLM 추출/저장
+        data, candidates, selections = extract_with_locations(ocr_result, project_name)
+        llm_dir = get_llm_path(workspaceName)
+        Path(llm_dir).mkdir(parents=True, exist_ok=True)
+        with open(os.path.join(llm_dir, f"{stem}_data.json"), "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+        with open(os.path.join(llm_dir, f"{stem}_candidates.json"), "w", encoding="utf-8") as f:
+            json.dump(candidates, f, ensure_ascii=False, indent=4)
+        with open(os.path.join(llm_dir, f"{stem}_selections.json"), "w", encoding="utf-8") as f:
+            json.dump(selections, f, ensure_ascii=False, indent=4)
+        llm_results_l.append(os.path.join(llm_dir, f"{stem}_data.json"))
 
-            # 시각화 이미지 생성
-            img_path = ocr_result.get("source_image")
-            if img_path:
-                filename = os.path.basename(img_path)
-                viz_dir = get_visualization_path(workspaceName)
-                Path(viz_dir).mkdir(parents=True, exist_ok=True)
-                overlay_path = os.path.join(viz_dir, f"{Path(filename).stem}_overlay.png")
-                draw_overlays(img_path, selections, overlay_path)
-                visualization_d[filename] = overlay_path
+        # 시각화 이미지 생성
+        img_path = ocr_result.get("source_image")
+        if img_path:
+            filename = os.path.basename(img_path)
+            viz_dir = get_visualization_path(workspaceName)
+            Path(viz_dir).mkdir(parents=True, exist_ok=True)
+            overlay_path = os.path.join(viz_dir, f"{Path(filename).stem}_overlay.png")
+            draw_overlays(img_path, selections, overlay_path)
+            visualization_d[filename] = overlay_path
 
-            # 분개 생성
-            data_dict = get_json_wt_one_value_from_extract_invoice_fields(data)
-            data_dict = [data_dict]
-            data_dict = drop_source_id_from_json(data_dict)
-            update_voucher_data(workspaceName, file, data_dict[0])
-            record_list = make_journal_entry(data_dict)
-            # record_list = make_journal_entry_to_record_list(result_dict, os.path.basename(file))
-            journal_entry_l.extend(record_list)
+        # 분개 생성
+        data_dict = get_json_wt_one_value_from_extract_invoice_fields(data)
+        data_dict = [data_dict]
+        data_dict = drop_source_id_from_json(data_dict)
+        update_voucher_data(workspaceName, file, data_dict[0])
+        record_list = make_journal_entry(data_dict)
+        # record_list = make_journal_entry_to_record_list(result_dict, os.path.basename(file))
+        journal_entry_l.extend(record_list)
 
-        # 상태 반영
-        add_ocr_results(workspaceName, ocr_results_l)
-        add_llm_results(workspaceName, llm_results_l)
-        add_visualization(workspaceName, visualization_d)
+    # 상태 반영
+    add_ocr_results(workspaceName, ocr_results_l)
+    add_llm_results(workspaceName, llm_results_l)
+    add_visualization(workspaceName, visualization_d)
 
-        #시연용으로 더존만 내림
+    #시연용으로 더존만 내림
 
-        sap_journal_entry_l = sap_view(journal_entry_l)
-        dzone_journal_entry_l = dzone_view(journal_entry_l)
+    sap_journal_entry_l = sap_view(journal_entry_l)
+    dzone_journal_entry_l = dzone_view(journal_entry_l)
 
-        jpath = os.path.join(get_journal_path(workspaceName), "journal_entry.json")
-        Path(os.path.dirname(jpath)).mkdir(parents=True, exist_ok=True)
-        with open(jpath, "w", encoding="utf-8") as f:
-            json.dump(dzone_journal_entry_l, f, ensure_ascii=False, indent=4)
-        add_journal_drafts(workspaceName, [jpath])
+    jpath = os.path.join(get_journal_path(workspaceName), "journal_entry.json")
+    Path(os.path.dirname(jpath)).mkdir(parents=True, exist_ok=True)
+    with open(jpath, "w", encoding="utf-8") as f:
+        json.dump(dzone_journal_entry_l, f, ensure_ascii=False, indent=4)
+    add_journal_drafts(workspaceName, [jpath])
 
-        # 시각화 경로는 /static URL도 같이 내려주자
-        viz_for_front = {
-            k: (fs_to_static_url(v) or v) for k, v in visualization_d.items()
-        }
+    # 시각화 경로는 /static URL도 같이 내려주자
+    viz_for_front = {
+        k: (fs_to_static_url(v) or v) for k, v in visualization_d.items()
+    }
 
-        return ApiResponse(
-            ok=True,
-            data={
-                "ocrResults": ocr_results_l,
-                "llmResults": llm_results_l,
-                "journalPath": jpath,
-                "visualizations": viz_for_front,
-                "journal": dzone_journal_entry_l
-            },
-            error=None,
-            ts=_now_iso()
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return ApiResponse(
+        ok=True,
+        data={
+            "ocrResults": ocr_results_l,
+            "llmResults": llm_results_l,
+            "journalPath": jpath,
+            "visualizations": viz_for_front,
+            "journal": dzone_journal_entry_l
+        },
+        error=None,
+        ts=_now_iso()
+    )
+    # except Exception as e:
+    #     raise HTTPException(status_code=500, detail=str(e))
 
 # === 2) 분개 초안 조회 ===
 @app.get("/workspaces/{workspaceName}/journal-drafts", response_model=ApiResponse)
@@ -835,5 +844,5 @@ if __name__ == "__main__":
     # refresh_journal_entries_api("wshopp")
     # get_visualization_image_path_api("wshopp","visualizations/workspace/wshopp/input_files/HUNTRIX.png")
     # archive_journal_entry_api("wshopp")
-    run_ocr_and_journal("wshopp")
+    run_ocr_and_journal("TEST2508")
     print("done")

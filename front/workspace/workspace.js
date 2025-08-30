@@ -749,16 +749,16 @@ getStatusHTML(status, message) {
     try {
       // 실제 구현에서는 GET /projects API 호출
       const mockProjects = [
-        { id: 'proj_1', name: '루미 (HUNTRIX)' },
-        { id: 'proj_2', name: '미라 (HUNTRIX)' },
-        { id: 'proj_3', name: '조이 (HUNTRIX)' },
-        { id: 'proj_4', name: '진우 (SajaBoys)' },
-        { id: 'proj_5', name: '베이비 (SajaBoys)' },
-        { id: 'proj_6', name: '미스터리 (SajaBoys)' },
-        { id: 'proj_7', name: '로맨스 (SajaBoys)' },
-        { id: 'proj_8', name: '애비 (SajaBoys)' },
-        { id: 'proj_9', name: 'HUNTRIX 유닛 프로젝트' },
-        { id: 'proj_10', name: 'SajaBoys 유닛 프로젝트' }
+        { id: '루미 (HUNTRIX)', name: '루미 (HUNTRIX)' },
+        { id: '미라 (HUNTRIX)', name: '미라 (HUNTRIX)' },
+        { id: '조이 (HUNTRIX)', name: '조이 (HUNTRIX)' },
+        { id: '진우 (SajaBoys)', name: '진우 (SajaBoys)' },
+        { id: '베이비 (SajaBoys)', name: '베이비 (SajaBoys)' },
+        { id: '미스터리 (SajaBoys)', name: '미스터리 (SajaBoys)' },
+        { id: '로맨스 (SajaBoys)', name: '로맨스 (SajaBoys)' },
+        { id: '애비 (SajaBoys)', name: '애비 (SajaBoys)' },
+        { id: 'HUNTRIX 유닛 프로젝트', name: 'HUNTRIX 유닛 프로젝트' },
+        { id: 'SajaBoys 유닛 프로젝트', name: 'SajaBoys 유닛 프로젝트' }
       ];
 
       // 상태에 저장
@@ -1533,9 +1533,8 @@ getStatusHTML(status, message) {
 
     btnClose?.addEventListener('click', () => window.ModalManager?.hide(modal));
     btnCancel?.addEventListener('click', () => window.ModalManager?.hide(modal));
-    btnConfirm?.addEventListener('click', () => {
-      // 저장 로직은 이후 확장. 현재는 보기 전용 → 닫기만 수행
-      window.ModalManager?.hide(modal);
+    btnConfirm?.addEventListener('click', async () => {
+      await this.applyEditJournalModal();
     });
 
     this._initEditModalOnce = () => true; // 플래그 설정
@@ -1594,6 +1593,67 @@ getStatusHTML(status, message) {
     wrapper.appendChild(label);
     wrapper.appendChild(input);
     form.appendChild(wrapper);
+  }
+
+  async applyEditJournalModal() {
+    try {
+      const workspaceName = this.getWorkspaceNameFromURL();
+      const edits = this._collectVoucherEditsFromForm();
+      const fileId = edits['file_id'];
+      if (!workspaceName || !fileId) {
+        throw new Error('workspace 또는 file_id가 비어 있습니다.');
+      }
+
+      const baseUrl = getBaseUrl();
+      const patchResp = await fetch(`${baseUrl}/workspaces/${encodeURIComponent(workspaceName)}/voucher-data/${encodeURIComponent(fileId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ edits })
+      });
+      const patchJson = await patchResp.json();
+      if (!patchResp.ok || !patchJson.ok) {
+        throw new Error(patchJson.error || patchResp.statusText || '업데이트 실패');
+      }
+
+      // 분개 재생성 및 테이블 갱신
+      await this.refreshJournal();
+
+      // 모달 닫기 및 알림
+      const modal = document.getElementById('edit-journal-modal');
+      window.ModalManager?.hide(modal);
+      window.toast?.show('success', '저장 완료', 'VoucherData가 반영되고 분개가 갱신되었습니다.');
+    } catch (error) {
+      console.error('❌ VoucherData 적용 실패:', error);
+      window.toast?.show('error', '저장 실패', error.message || String(error));
+    }
+  }
+
+  _collectVoucherEditsFromForm() {
+    const getVal = (id) => document.getElementById(id)?.value ?? '';
+    const parseNum = (v) => {
+      const n = Number(String(v).replace(/[,\s]/g, ''));
+      return Number.isFinite(n) ? n : v || '';
+    };
+
+    const amount = parseNum(getVal('edit-amount'));
+    const accountCode = parseNum(getVal('edit-account-code'));
+
+    return {
+      '날짜': getVal('edit-date'),
+      '거래처': getVal('edit-counterparty'),
+      '금액': amount,
+      '유형': getVal('edit-type'),
+      '사업자등록번호': getVal('edit-business-number'),
+      '대표자': getVal('edit-representative'),
+      '주소': getVal('edit-address'),
+      '증빙유형': getVal('edit-document-type'),
+      '계정과목': getVal('edit-account-name'),
+      '계정코드': accountCode,
+      '프로젝트명': getVal('edit-project-name'),
+      '거래처코드': getVal('edit-counterparty-code'),
+      '거래처명': getVal('edit-counterparty-name'),
+      'file_id': getVal('edit-file-id')
+    };
   }
 }
 
