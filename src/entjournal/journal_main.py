@@ -289,7 +289,7 @@ def make_journal_line(voucher_data, journal_no, line_number, now, artist_code, a
           "입력일시" : now,
           "라인번호" : line_number, #UNIQUE ID로 수정
           "계정코드" : AP_ACCOUNT_CODE,
-          "계정과목명" : AP_ACCOUNT_NAME,
+          "계정과목" : AP_ACCOUNT_NAME,
           "차변/대변구분" : "대변",
           "금액(원화)" : amount,
           "금액(외화)" : amount,
@@ -306,7 +306,7 @@ def make_journal_line(voucher_data, journal_no, line_number, now, artist_code, a
           "참조번호" : None, #voucher_data["참조번호"]
           "손익센터" : None,
           "개별아이템텍스트" : make_text_for_journal(voucher_data["증빙유형"], voucher_data["날짜"], artist_name, voucher_data["거래처"], voucher_data["유형"]),
-          "file_id" : _normalize_rel(file_id)
+          "file_id" : os.path.basename(_normalize_rel(file_id)).split(".")[0]+".png"
         
       }
 
@@ -326,7 +326,7 @@ def make_journal_line(voucher_data, journal_no, line_number, now, artist_code, a
           "입력일시" : now,
           "라인번호" : line_number, #UNIQUE ID로 수정
           "계정코드" : voucher_data["계정코드"],
-          "계정과목명" : voucher_data["계정과목"],
+          "계정과목" : voucher_data["계정과목"],
           "차변/대변구분" : "차변",
           "금액(원화)" : amount,
           "금액(외화)" : amount,
@@ -343,7 +343,7 @@ def make_journal_line(voucher_data, journal_no, line_number, now, artist_code, a
           "참조번호" : None,#voucher_data["참조번호"],
           "손익센터" : None,
           "개별아이템텍스트" : make_text_for_journal(voucher_data["증빙유형"], voucher_data["날짜"], artist_name, voucher_data["거래처"], voucher_data["유형"]),
-          "file_id" : _normalize_rel(file_id)
+          "file_id" : os.path.basename(_normalize_rel(file_id)).split(".")[0]+".png"
       }
     return result
       

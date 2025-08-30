@@ -268,15 +268,36 @@
                             <table class="journal-table" data-testid="journal-table" aria-label="분개 결과 목록">
                                 <thead>
                                     <tr>
+                                        <th style="min-width:80px">회사코드</th>
                                         <th style="min-width:80px">전표번호</th>
+                                        <th style="min-width:80px">라인번호</th>
                                         <th style="min-width:100px">전표일자</th>
+                                        <th style="min-width:100px">작성부서</th>
+                                        <th style="min-width:100px">작성자</th>
+                                        <th style="min-width:100px">적요</th>
+                                        <th style="min-width:100px">회계연도</th>
+                                        <th style="min-width:100px">회계기간</th>
+                                        <th style="min-width:100px">전표유형</th>
+                                        <th style="min-width:100px">승인상태</th>
+                                        <th style="min-width:100px">자동기표여부</th>
+                                        <th style="min-width:100px">입력일시</th>
+                                        <th style="min-width:100px">계정코드</th>
                                         <th style="min-width:120px">계정과목</th>
                                         <th style="min-width:100px">차변/대변구분</th>
                                         <th style="min-width:100px">금액(원화)</th>
                                         <th style="min-width:120px">거래처명</th>
-                                        <th style="min-width:200px">적요</th>
+                                        <th style="min-width:200px">부서코드</th>
                                         <th style="min-width:100px">프로젝트코드</th>
-                                        <th style="min-width:80px">원본</th>
+                                        <th style="min-width:100px">관리항목1</th>
+                                        <th style="min-width:100px">관리항목2</th>
+                                        <th style="min-width:100px">사업자등록번호</th>
+                                        <th style="min-width:100px">증빙일</th>
+                                        <th style="min-width:100px">참조번호</th>
+                                        <th style="min-width:100px">손익센터</th>
+                                        <th style="min-width:100px">개별아이템텍스트</th>
+                                        <th style="min-width:100px">file_id</th>
+                                        <th style="min-width:100px">원본</th>
+                                        
                                     </tr>
                                 </thead>
                                 <tbody id="journal-rows">
@@ -359,26 +380,131 @@
         </div>
     </div>
 
-    <!-- 원본 이미지 보기 모달 -->
-    <div id="image-modal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="image-modal-title">
-        <div class="modal-backdrop" id="image-modal-backdrop"></div>
-        <div class="modal-content image-modal-content">
-            <header class="modal-header">
-                <h2 id="image-modal-title">원본 이미지</h2>
-                <button type="button" class="modal-close" id="image-modal-close" aria-label="닫기">×</button>
-            </header>
-            
-            <div class="modal-body image-modal-body">
-                <div class="image-container">
-                    <img id="modal-image" src="" alt="원본 이미지" style="max-width: 100%; max-height: 80vh; object-fit: contain;">
-                </div>
-                <div class="image-info">
-                    <p id="image-file-name">파일명: -</p>
-                </div>
-            </div>
+    <!-- Modal: dialog 버전 -->
+    <dialog id="image-modal" class="image-dialog">
+        <div class="image-dialog__container">
+        <div class="image-dialog__header">
+            <h3 class="modal-title">원본 이미지</h3>
+            <button id="image-modal-close" class="image-dialog__close" aria-label="Close (Esc)">
+            ✕
+            </button>
         </div>
-    </div>
-
+        <div class="image-dialog__body">
+            <img class="modal-image" src="" alt="원본 이미지" />
+        </div>
+        </div>
+    </dialog>
+    
+    <style>
+        /* 크기/레이아웃: 데스크톱 65vw/최대 900px, 높이 제한 85vh */
+        .image-dialog {
+        border: none;
+        padding: 0;
+        width: min(65vw, 900px);
+        max-width: 90vw;
+        max-height: 85vh;
+        overflow: visible; /* 내부 컨테이너가 스크롤 관리 */
+        background: transparent; /* 라운드 박스만 보이도록 */
+        }
+        .image-dialog::backdrop {
+        background: rgba(0,0,0,0.6);
+        backdrop-filter: blur(2px);
+        }
+    
+        /* 모바일에서는 더 타이트하게 */
+        @media (max-width: 768px) {
+        .image-dialog { width: 92vw; max-height: 88vh; }
+        }
+    
+        .image-dialog__container {
+        display: flex;
+        flex-direction: column;
+        background: var(--modal-bg, #fff);
+        color: var(--modal-fg, #111);
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+        overflow: hidden;
+        height: 100%;
+        }
+    
+        .image-dialog__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 16px;
+        border-bottom: 1px solid rgba(0,0,0,0.08);
+        }
+        .image-dialog__header .modal-title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 1.4;
+        }
+    
+        .image-dialog__close {
+        appearance: none;
+        border: none;
+        background: transparent;
+        font-size: 18px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 6px 8px;
+        border-radius: 8px;
+        }
+        .image-dialog__close:hover { background: rgba(0,0,0,0.06); }
+    
+        .image-dialog__body {
+        /* 헤더 제외 높이 내에서만 스크롤 */
+        padding: 12px 12px 16px;
+        overflow: auto;
+        }
+    
+        .modal-image {
+        display: block;
+        width: 100%;
+        max-height: calc(85vh - 60px); /* 헤더 높이 감안 */
+        height: auto;
+        object-fit: contain;
+        }
+    
+        /* 다크모드 대비 (선택) */
+        @media (prefers-color-scheme: dark) {
+        .image-dialog__container {
+            --modal-bg: #0b0b0c;
+            --modal-fg: #e6e6e6;
+        }
+        .image-dialog__header { border-bottom-color: rgba(255,255,255,0.08); }
+        .image-dialog__close:hover { background: rgba(255,255,255,0.08); }
+        }
+    </style>
+    
+    <script>
+        // X 버튼으로 닫기
+        document.getElementById('image-modal-close')?.addEventListener('click', () => {
+        const dlg = document.getElementById('image-modal');
+        if (!dlg) return;
+        dlg.close();
+        });
+    
+        // ESC로 닫기 (dialog 기본 동작이지만 안전하게 명시)
+        document.getElementById('image-modal')?.addEventListener('cancel', (e) => {
+        // 기본 cancel은 close 이벤트를 동반하므로 추가 처리 불필요
+        // 원하는 경우 e.preventDefault()로 막고 커스텀 처리 가능
+        });
+    
+        // 바깥(백드롭) 클릭으로 닫기
+        document.getElementById('image-modal')?.addEventListener('click', (e) => {
+        const dlg = e.currentTarget;
+        const rect = dlg.querySelector('.image-dialog__container')?.getBoundingClientRect();
+        if (!rect) return;
+        const clickedOutside =
+            e.clientX < rect.left || e.clientX > rect.right ||
+            e.clientY < rect.top  || e.clientY > rect.bottom;
+        if (clickedOutside) dlg.close();
+        });
+    </script>
+  
     <!-- 분개 수정 모달 -->
     <div id="edit-journal-modal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="edit-modal-title">
         <div class="modal-backdrop" id="edit-modal-backdrop"></div>

@@ -1,10 +1,10 @@
 {
-    "source_image": "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\qwerty\\input_files\\R-1.png",
+    "source_image": "C:\\Users\\ykim513\\AppData\\Local\\Temp\\entocr_temp_rnytke0k\\R-1.png",
     "success": true,
     "ocr_summary": {
         "text_count": 45,
         "average_confidence": 0.9063310530450609,
-        "processing_time": 33.63542079925537,
+        "processing_time": 32.55147838592529,
         "image_size": [
             924,
             1794
@@ -1724,12 +1724,12 @@
         }
     },
     "extraction_metadata": {
-        "extraction_time": "2025-08-30T21:44:54.664811",
+        "extraction_time": "2025-08-29T17:44:03.357358",
         "processing_successful": true,
         "text_boxes_count": 45,
         "total_characters": 343,
         "avg_confidence": 0.9063310530450609,
-        "processing_time": 33.63542079925537,
+        "processing_time": 32.55147838592529,
         "image_size": [
             924,
             1794

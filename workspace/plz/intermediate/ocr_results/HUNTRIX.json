@@ -1,10 +1,10 @@
 {
-    "source_image": "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\wshopp\\input_files\\HUNTRIX.png",
+    "source_image": "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\plz\\input_files\\HUNTRIX.png",
     "success": true,
     "ocr_summary": {
         "text_count": 77,
         "average_confidence": 0.966350396345188,
-        "processing_time": 24.660000324249268,
+        "processing_time": 46.41709017753601,
         "image_size": [
             1300,
             913
@@ -2903,12 +2903,12 @@
         }
     },
     "extraction_metadata": {
-        "extraction_time": "2025-08-30T21:47:45.074858",
+        "extraction_time": "2025-08-29T16:01:00.954166",
         "processing_successful": true,
         "text_boxes_count": 77,
         "total_characters": 428,
         "avg_confidence": 0.966350396345188,
-        "processing_time": 24.660000324249268,
+        "processing_time": 46.41709017753601,
         "image_size": [
             1300,
             913

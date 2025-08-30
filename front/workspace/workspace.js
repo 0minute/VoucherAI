@@ -49,6 +49,7 @@ setupAPI() {
     
     // 기존 업로드된 파일들 로드
     this.loadUploadedFiles();
+    this.loadJournalEntries();
     
     console.log('🚀 Workspace Manager initialized');
   }
@@ -1252,6 +1253,33 @@ getStatusHTML(status, message) {
   // 분개 관련 함수들
   // ================================================== //
 
+  // 서버에 저장된 분개 초안 로드
+  async loadJournalEntries() {
+    try {
+      const workspaceName = this.getWorkspaceNameFromURL();
+      if (!workspaceName) {
+        console.warn('워크스페이스 이름을 찾을 수 없습니다.');
+        return;
+      }
+
+      const baseUrl = getBaseUrl();
+      const response = await fetch(`${baseUrl}/workspaces/${encodeURIComponent(workspaceName)}/journal-drafts`);
+      if (!response.ok) {
+        throw new Error(`분개 로드 실패: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      if (result.ok) {
+        const journalEntries = result.data?.journal || [];
+        this.displayJournalEntries(journalEntries);
+      } else {
+        throw new Error(result.error || '분개 로드 실패');
+      }
+    } catch (error) {
+      console.error('❌ 분개 로드 실패:', error);
+    }
+  }
+
   // 분개 새로고침
   async refreshJournal() {
     try {
@@ -1314,14 +1342,34 @@ getStatusHTML(status, message) {
       
       // 분개 데이터 컬럼에 맞춰 표시
       row.innerHTML = `
+        <td>${entry.회사코드 || '-'}</td>
         <td>${entry.전표번호 || '-'}</td>
+        <td>${entry.라인번호 || '-'}</td>
         <td>${entry.전표일자 || '-'}</td>
-        <td>${entry.계정과목명 || '-'}</td>
+        <td>${entry.작성부서 || '-'}</td>
+        <td>${entry.작성자 || '-'}</td>
+        <td>${entry.적요 || '-'}</td>
+        <td>${entry.회계연도 || '-'}</td>
+        <td>${entry.회계기간 || '-'}</td>
+        <td>${entry.전표유형 || '-'}</td>
+        <td>${entry.승인상태 || '-'}</td>
+        <td>${entry.자동기표여부 || '-'}</td>
+        <td>${entry.입력일시 || '-'}</td>
+        <td>${entry.계정코드 || '-'}</td>
+        <td>${entry.계정과목 || '-'}</td>
         <td>${entry['차변/대변구분'] || '-'}</td>
         <td>${entry['금액(원화)'] ? entry['금액(원화)'].toLocaleString() : '-'}</td>
         <td>${entry.거래처명 || '-'}</td>
-        <td>${entry.적요 || '-'}</td>
+        <td>${entry.부서코드 || '-'}</td>
         <td>${entry.프로젝트코드 || '-'}</td>
+        <td>${entry.관리항목1 || '-'}</td>
+        <td>${entry.관리항목2 || '-'}</td>
+        <td>${entry.사업자등록번호 || '-'}</td>
+        <td>${entry.증빙일 || '-'}</td>
+        <td>${entry.참조번호 || '-'}</td>
+        <td>${entry.손익센터 || '-'}</td>
+        <td>${entry.개별아이템텍스트 || '-'}</td>
+        <td>${entry.file_id || '-'}</td>
         <td>
           <button type="button" class="btn-ghost btn-sm view-original" data-file-id="${entry.file_id || ''}">
             원본
@@ -1378,33 +1426,34 @@ getStatusHTML(status, message) {
   }
 
   // 원본 이미지 보기
+  // 원본 이미지 보기
   async viewOriginalImage(fileId) {
     try {
       const workspaceName = this.getWorkspaceNameFromURL();
-      if (!workspaceName) {
-        throw new Error('워크스페이스 이름을 찾을 수 없습니다.');
-      }
+      if (!workspaceName) throw new Error('워크스페이스 이름을 찾을 수 없습니다.');
 
       console.log('🖼️ 원본 이미지 로드 중:', fileId);
-      
-      const baseUrl = getBaseUrl();
-      const response = await fetch(`${baseUrl}/workspaces/${encodeURIComponent(workspaceName)}/visualizations/${encodeURIComponent(fileId)}`);
 
-      if (!response.ok) {
-        throw new Error(`이미지 로드 실패: ${response.statusText}`);
-      }
+      const baseUrl = getBaseUrl(); // 예: http://localhost:8000
+      const resp = await fetch(`${baseUrl}/workspaces/${encodeURIComponent(workspaceName)}/visualizations/${encodeURIComponent(fileId)}`);
+      if (!resp.ok) throw new Error(`이미지 로드 실패: ${resp.status} ${resp.statusText}`);
 
-      const result = await response.json();
-      
+      const result = await resp.json();
+
       if (result.ok && result.data?.imageUrl) {
-        this.showImageModal(result.data.imageUrl, fileId);
+        // '/static/...' 같은 상대경로를 절대경로로
+        const absUrl = result.data.imageUrl.startsWith('http')
+          ? result.data.imageUrl
+          : `${baseUrl.replace(/\/$/, '')}${result.data.imageUrl.startsWith('/') ? '' : '/'}${result.data.imageUrl}`;
+
+        console.log('✅ 이미지 URL:', absUrl);
+        this.showImageModal(absUrl, fileId);
       } else {
         throw new Error('이미지 URL을 찾을 수 없습니다.');
       }
-      
     } catch (error) {
       console.error('❌ 원본 이미지 로드 실패:', error);
-      window.toast?.show('error', '이미지 로드 실패', error.message);
+      window.toast?.show('error', '이미지 로드 실패', error.message || String(error));
     }
   }
 
@@ -1418,18 +1467,29 @@ getStatusHTML(status, message) {
 
     const modalImage = modal.querySelector('.modal-image');
     const modalTitle = modal.querySelector('.modal-title');
-    
+
     if (modalImage) {
       modalImage.src = imageUrl;
       modalImage.alt = fileName || '원본 이미지';
     }
-    
     if (modalTitle) {
       modalTitle.textContent = fileName || '원본 이미지';
     }
 
+    // <dialog> 지원
+    if (typeof modal.showModal === 'function') {
+      modal.showModal();
+      return;
+    }
+
+    // Tailwind/일반 div 지원
+    // hidden 클래스 제거
+    if (modal.classList.contains('hidden')) modal.classList.remove('hidden');
+
+    // 혹시 display로 제어 중이면 block으로
     modal.style.display = 'block';
   }
+
 
   // 분개 편집 모달 열기 (플레이스홀더)
   openEditJournalModal(entry, index) {

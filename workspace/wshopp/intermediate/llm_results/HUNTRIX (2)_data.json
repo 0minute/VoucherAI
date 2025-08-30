@@ -7,7 +7,7 @@
     ],
     "거래처": [
         {
-            "value": "HUNTER피부과",
+            "value": "HUNTR/X",
             "source_id": null
         }
     ],
@@ -28,7 +28,7 @@
     ],
     "대표자": [
         {
-            "value": "OOO",
+            "value": "루미",
             "source_id": null
         }
     ],
@@ -46,5 +46,5 @@
     "프로젝트명": null,
     "거래처코드": "10001",
     "거래처명": "HUNTRIX한의원",
-    "file_id": "workspace/wshopp/input_files/HUNTRIX.png"
+    "file_id": "workspace/wshopp/input_files/HUNTRIX (2).png"
 }
