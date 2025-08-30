@@ -1,0 +1,29 @@
+{
+  "workspace_name": "KPOP",
+  "version": 2,
+  "created_at": "2025-08-30T13:37:50.396092Z",
+  "updated_at": "2025-08-30T13:39:35.160271Z",
+  "paths": {
+    "input_dir": "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\KPOP\\input_files",
+    "intermediate_dir": "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\KPOP\\intermediate",
+    "ocr_dir": "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\KPOP\\intermediate\\ocr_results",
+    "llm_dir": "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\KPOP\\intermediate\\llm_results",
+    "journal_dir": "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\KPOP\\intermediate\\journal_entries",
+    "final_output_dir": "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\KPOP\\final_output",
+    "logs_dir": "C:\\Users\\ykim513\\Desktop\\PythonWorkspace\\Entocr\\workspace\\KPOP\\logs"
+  },
+  "meta": {
+    "target_period": "",
+    "line_count": 0
+  },
+  "files": {
+    "uploaded": [
+      "workspace\\KPOP\\input_files\\KPOP피부과.PNG"
+    ],
+    "ocr_results": [],
+    "llm_results": [],
+    "visualization": {},
+    "journal_drafts": [],
+    "final_artifacts": []
+  }
+}

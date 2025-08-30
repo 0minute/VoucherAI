@@ -20,7 +20,7 @@ def initialize_voucher_data(workspace_name: str, reset: bool = False) -> None:
 def update_voucher_data(workspace_name: str, file_id: str, edits: dict) -> None:
     try:
         voucher_data_ds = read_voucher_data(workspace_name)
-        voucher_data_ds[_normalize_rel(file_id)] = edits
+        voucher_data_ds[os.path.basename(_normalize_rel(file_id))] = edits
         write_voucher_data(workspace_name, voucher_data_ds)
         return True, None
     except Exception as e:

@@ -1492,10 +1492,108 @@ getStatusHTML(status, message) {
 
 
   // 분개 편집 모달 열기 (플레이스홀더)
-  openEditJournalModal(entry, index) {
-    console.log('📝 분개 편집 모달 열기:', entry, index);
-    // TODO: 분개 편집 모달 구현
-    window.toast?.show('info', '기능 준비 중', '분개 편집 기능은 준비 중입니다.');
+  async openEditJournalModal(entry, index) {
+    try {
+      const fileId = entry?.file_id;
+      const workspaceName = this.getWorkspaceNameFromURL();
+      if (!fileId || !workspaceName) {
+        console.warn('필수 정보 누락: file_id 또는 workspaceName');
+        return;
+      }
+
+      // 이벤트 리스너 1회 바인딩
+      this._initEditModalOnce?.() ?? this._setupEditModalHandlers();
+
+      const baseUrl = getBaseUrl();
+      const url = `${baseUrl}/workspaces/${encodeURIComponent(workspaceName)}/voucher-data/${encodeURIComponent(fileId)}`;
+      const resp = await fetch(url);
+      if (!resp.ok) {
+        throw new Error(`VoucherData 로드 실패: ${resp.status} ${resp.statusText}`);
+      }
+      const result = await resp.json();
+      if (!result.ok || !result.data?.voucherData) {
+        throw new Error(result.error || 'VoucherData가 없습니다');
+      }
+
+      this.populateEditJournalModal(result.data.voucherData);
+
+      const modal = document.getElementById('edit-journal-modal');
+      window.ModalManager?.show(modal);
+    } catch (error) {
+      console.error('❌ 편집 모달 열기 실패:', error);
+      window.toast?.show('error', '모달 열기 실패', error.message || String(error));
+    }
+  }
+
+  _setupEditModalHandlers() {
+    const modal = document.getElementById('edit-journal-modal');
+    const btnClose = document.getElementById('edit-modal-close');
+    const btnCancel = document.getElementById('edit-cancel');
+    const btnConfirm = document.getElementById('edit-confirm');
+
+    btnClose?.addEventListener('click', () => window.ModalManager?.hide(modal));
+    btnCancel?.addEventListener('click', () => window.ModalManager?.hide(modal));
+    btnConfirm?.addEventListener('click', () => {
+      // 저장 로직은 이후 확장. 현재는 보기 전용 → 닫기만 수행
+      window.ModalManager?.hide(modal);
+    });
+
+    this._initEditModalOnce = () => true; // 플래그 설정
+  }
+
+  populateEditJournalModal(voucherData) {
+    // file_id 필드가 없으면 생성 (읽기 전용)
+    this._ensureFileIdField();
+    // 안전 접근용 헬퍼
+    const setVal = (id, value) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      // 숫자 필드 등 타입에 맞춰 기본 변환
+      if (el.type === 'number') {
+        const num = typeof value === 'number' ? value : (value ? Number(String(value).replace(/[,\s]/g, '')) : undefined);
+        el.value = Number.isFinite(num) ? String(num) : '';
+      } else {
+        el.value = value ?? '';
+      }
+    };
+
+    setVal('edit-date', voucherData['날짜']);
+    setVal('edit-counterparty', voucherData['거래처']);
+    setVal('edit-amount', voucherData['금액']);
+    setVal('edit-type', voucherData['유형']);
+    setVal('edit-business-number', voucherData['사업자등록번호']);
+    setVal('edit-representative', voucherData['대표자']);
+    setVal('edit-address', voucherData['주소']);
+    setVal('edit-document-type', voucherData['증빙유형']);
+    setVal('edit-account-name', voucherData['계정과목']);
+    setVal('edit-account-code', voucherData['계정코드']);
+    setVal('edit-project-name', voucherData['프로젝트명']);
+    setVal('edit-counterparty-code', voucherData['거래처코드']);
+    setVal('edit-counterparty-name', voucherData['거래처명']);
+    setVal('edit-file-id', voucherData['file_id']);
+  }
+
+  _ensureFileIdField() {
+    const form = document.getElementById('edit-journal-form');
+    if (!form) return;
+    if (document.getElementById('edit-file-id')) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'form-group full-width';
+    const label = document.createElement('label');
+    label.setAttribute('for', 'edit-file-id');
+    label.className = 'form-label';
+    label.textContent = 'file_id';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = 'edit-file-id';
+    input.className = 'form-input';
+    input.readOnly = true;
+    input.setAttribute('aria-readonly', 'true');
+
+    wrapper.appendChild(label);
+    wrapper.appendChild(input);
+    form.appendChild(wrapper);
   }
 }
 
